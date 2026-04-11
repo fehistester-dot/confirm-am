@@ -4,33 +4,21 @@ import pandas as pd
 # 1. Page Configuration
 st.set_page_config(page_title="ConfirmAm", page_icon="🛡️", layout="wide")
 
-# 2. Your Database Link
+# 2. Database (Replace with your link)
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1Amh_WmVwXCeZhc0h6NesZhBuGZAT0Ch60PuH-BF3xVE/export?format=csv"
 
-# 3. Professional Styling
-st.markdown("""
-    <style>
-    .stApp { background-color: #fcfcfc; }
-    .product-card {
-        background-color: white;
-        padding: 15px;
-        border-radius: 15px;
-        border: 1px solid #eee;
-        margin-bottom: 20px;
-        text-align: center;
-    }
-    .price-text { color: #d4af37; font-weight: 800; font-size: 1.2em; }
-    </style>
-    """, unsafe_allow_html=True)
+# --- SIDEBAR ---
+st.sidebar.title("🛡️ ConfirmAm")
+st.sidebar.markdown("The Gold Standard for Secure Fashion.")
 
-# --- SIDEBAR NAVIGATION ---
-st.sidebar.image("https://img.icons8.com/ios-filled/100/d4af37/shield.png", width=50) # Just a placeholder gold shield
-menu = st.sidebar.radio("Main Menu", ["Shopping Mall", "Merchant Portal", "Install App"])
+# WhatsApp Support (Crucial for Trust)
+st.sidebar.link_button("Contact Support", "https://wa.me/234XXXXXXXXXX") 
 
-# --- OPTION 1: THE SHOPPING MALL ---
+menu = st.sidebar.radio("Navigation", ["Shopping Mall", "Merchant Portal", "Safety & Escrow"])
+
+# --- OPTION 1: SHOPPING MALL ---
 if menu == "Shopping Mall":
-    st.markdown("<h1 style='text-align:center; color:#000;'>ConfirmAm Mall</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center; color:#888;'>Secure Escrow Protection Enabled 🛡️</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align:center;'>ConfirmAm Mall</h1>", unsafe_allow_html=True)
     
     try:
         data = pd.read_csv(SHEET_URL)
@@ -39,67 +27,47 @@ if menu == "Shopping Mall":
         cols = st.columns(2)
         for i, row in data.iterrows():
             with cols[i % 2]:
-                st.markdown('<div class="product-card">', unsafe_allow_html=True)
-                
-                # Image Display
+                st.markdown('<div style="border:1px solid #eee; padding:15px; border-radius:15px; background:white; text-align:center; margin-bottom:20px;">', unsafe_allow_html=True)
                 if 'image_url' in row and pd.notnull(row['image_url']):
                     st.image(row['image_url'], use_container_width=True)
-                else:
-                    st.markdown('<div style="height:150px; background:#f9f9f9; border-radius:10px;"></div>', unsafe_allow_html=True)
                 
-                # Verified Status
+                # Verified Badge Logic
                 is_v = str(row.get('verified', '')).strip().upper() == "TRUE"
-                badge = '<span style="color:#1DA1F2;"> ☑️</span>' if is_v else ""
+                badge = " ☑️" if is_v else ""
                 
-                st.markdown(f"""
-                    <div style="margin-top:10px;">
-                        <p style="font-size:0.7em; color:#666; margin:0; text-transform:uppercase;">{row.get('seller', 'Vendor')} {badge}</p>
-                        <b style="font-size:1.1em; color:#111;">{row.get('name', 'Luxury Item')}</b>
-                        <p class="price-text">₦{row.get('price', 0):,}</p>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"### {row.get('name', 'Luxury Item')}")
+                st.markdown(f"<p style='color:#d4af37; font-size:1.3em; font-weight:bold;'>₦{row.get('price', 0):,}</p>", unsafe_allow_html=True)
+                st.markdown(f"<p style='color:#888; font-size:0.8em;'>Vendor: {row.get('seller', 'Store')}{badge}</p>", unsafe_allow_html=True)
                 
-                st.button("Secure Purchase", key=f"btn_{i}", use_container_width=True)
+                st.button("Secure Order", key=f"buy_{i}", use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
     except:
-        st.warning("Refreshing catalog... please wait.")
+        st.info("The Mall is being restocked. Please refresh in a moment.")
 
-# --- OPTION 2: THE MERCHANT PORTAL ---
+# --- OPTION 2: MERCHANT PORTAL ---
 elif menu == "Merchant Portal":
-    st.title("📥 Merchant Application")
-    st.write("Submit your product details below. **ConfirmAm Quality Control** will review your submission.")
+    st.title("📤 Vendor Submission")
+    st.write("Join the elite circle of ConfirmAm verified vendors.")
+    st.info("Review Schedule: Submissions are batched daily at 8:00 PM WAT.")
     
-    with st.form("merchant_upload"):
-        st.subheader("Product Details")
-        v_brand = st.text_input("Registered Brand Name")
-        p_title = st.text_input("Product Title")
-        p_amt = st.number_input("Listing Price (₦)", min_value=0)
-        p_link = st.text_input("Direct Image Link (from PostImages.org)")
+    with st.form("merchant_form"):
+        v_name = st.text_input("Brand Name")
+        p_name = st.text_input("Product Name")
+        p_price = st.number_input("Price (₦)", min_value=0)
+        p_img = st.text_input("Direct Image Link (ends in .jpg or .png)")
         
-        st.divider()
-        st.write("By submitting, you agree to the ConfirmAm 48-hour Escrow Release policy.")
-        
-        if st.form_submit_button("Submit to ConfirmAm"):
-            if v_brand and p_title and p_link:
-                st.success("✅ Submission Received! ConfirmAm will review and sync your product shortly.")
-                # Generating the easy copy-paste line for you
-                formatted_data = f"NEW_ID, {p_title}, {p_amt}, {v_brand}, FALSE, {p_link}"
-                st.info("Merchant Code (Copy & Send to ConfirmAm Support):")
-                st.code(formatted_data, language="text")
-            else:
-                st.error("Please fill in all fields.")
+        if st.form_submit_button("Submit Product"):
+            st.success("Success! Copy the code below and send it to the ConfirmAm admin.")
+            st.code(f"NEW, {p_name}, {p_price}, {v_name}, FALSE, {p_img}")
 
-# --- OPTION 3: INSTALL APP ---
-elif menu == "Install App":
-    st.title("📲 Install ConfirmAm")
-    st.markdown("""
-    Add ConfirmAm to your home screen for instant access to secure shopping.
-    
-    **iPhone (Safari):**
-    1. Tap the **Share** icon (square with arrow).
-    2. Select **'Add to Home Screen'**.
-    
-    **Android (Chrome):**
-    1. Tap the **3 vertical dots**.
-    2. Select **'Install App'** or **'Add to Home Screen'**.
+# --- OPTION 3: SAFETY & ESCROW (Compliance Header) ---
+elif menu == "Safety & Escrow":
+    st.title("🛡️ Our Escrow Protection")
+    st.write("""
+    ConfirmAm is built on trust. Here is how we protect you:
+    - **Payments:** All funds stay in our secure vault until you confirm delivery.
+    - **Verification:** We manually vet every 'Blue Tick' vendor.
+    - **Disputes:** Not as described? Contact support within 24 hours for a resolution.
     """)
+    st.divider()
+    st.markdown("<p style='font-size:0.8em; color:#999;'>ConfirmAm is a registered Marketplace and Retail Service Provider.</p>", unsafe_allow_html=True)
