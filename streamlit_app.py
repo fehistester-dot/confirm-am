@@ -7,28 +7,32 @@ st.set_page_config(page_title="ConfirmAm Marketplace", page_icon="🛡️", layo
 # 2. Styling
 st.markdown("""
     <style>
-    .main { background-color: #f0f2f6; }
-    .product-card { background-color: white; padding: 15px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 10px; text-align: center; }
-    .payment-box { background-color: #e3f2fd; padding: 20px; border-radius: 15px; border: 2px dashed #007bff; }
-    .stButton>button { border-radius: 20px; }
+    .main { background-color: #f8f9fa; }
+    .product-card { background-color: white; padding: 20px; border-radius: 15px; border: 1px solid #eee; text-align: center; box-shadow: 0px 4px 10px rgba(0,0,0,0.05); }
+    .payment-box { background-color: #f0fff4; padding: 20px; border-radius: 15px; border: 2px solid #28a745; color: #155724; }
+    .wa-button { background-color: #25D366 !important; color: white !important; font-weight: bold !important; border-radius: 25px !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Initialize Databases
+# 3. Database
 if 'inventory' not in st.session_state:
     st.session_state.inventory = []
 if 'orders' not in st.session_state:
     st.session_state.orders = {}
 
-st.title("🛡️ ConfirmAm Secure Marketplace")
+# YOUR WHATSAPP NUMBER (International format without +)
+# CHANGE THIS TO YOUR REAL NUMBER SO YOU GET THE MESSAGES
+ADMIN_WHATSAPP = "2348012345678" 
 
-tab1, tab2, tab3 = st.tabs(["🛒 Shop Arrivals", "📤 Seller: List Item", "💳 Buyer: My Payments"])
+st.title("🛡️ ConfirmAm Marketplace")
 
-# --- TAB 1: SHOP ---
+tab1, tab2, tab3 = st.tabs(["🛒 Browse Shop", "📤 Seller Dashboard", "💳 Payment & Security"])
+
+# --- SHOP ---
 with tab1:
-    st.header("Available for Secure Purchase")
+    st.header("Latest Marketplace Items")
     if not st.session_state.inventory:
-        st.info("No items yet.")
+        st.info("Shop is empty. List something!")
     else:
         cols = st.columns(3)
         for idx, item in enumerate(st.session_state.inventory):
@@ -36,79 +40,52 @@ with tab1:
                 st.markdown(f'<div class="product-card"><h3>{item["name"]}</h3><h2>₦{item["price"]:,}</h2></div>', unsafe_allow_html=True)
                 if item['image']: st.image(item['image'], use_container_width=True)
                 
-                if st.button(f"Buy Safely: {item['name']}", key=f"buy_{idx}"):
-                    order_id = str(uuid.uuid4())[:6].upper()
-                    st.session_state.orders[order_id] = {
-                        "item": item['name'],
-                        "price": item['price'],
-                        "status": "Pending Payment",
-                        "receipt": None
-                    }
-                    st.session_state.current_order = order_id
-                    st.success(f"Order Created! Your Order ID is: {order_id}")
-                    st.info("Go to the 'Buyer: My Payments' tab to pay.")
+                if st.button(f"Buy Now: {item['name']}", key=f"buy_{idx}"):
+                    oid = str(uuid.uuid4())[:6].upper()
+                    st.session_state.orders[oid] = {"item": item['name'], "price": item['price'], "status": "Pending"}
+                    st.session_state.last_oid = oid
+                    st.success(f"Order Created! ID: {oid}")
 
-# --- TAB 2: SELLER ---
+# --- SELLER ---
 with tab2:
-    st.header("Add to Catalog")
-    with st.form("seller_form"):
+    st.header("List a New Product")
+    with st.form("add_item"):
         name = st.text_input("Product Name")
         price = st.number_input("Price (₦)", min_value=100)
         img = st.file_uploader("Upload Image", type=['jpg', 'png'])
-        submitted = st.form_submit_button("Post to Shop")
-        if submitted and name:
+        if st.form_submit_button("List Now"):
             st.session_state.inventory.append({"name": name, "price": price, "image": img})
-            st.success("Item is live!")
+            st.rerun()
 
-# --- TAB 3: PAYMENT & PROTECTION ---
+# --- PAYMENT ---
 with tab3:
-    st.header("Verify Your Payment")
+    st.header("Confirm Your Secure Payment")
+    oid_input = st.text_input("Enter Order ID", value=st.session_state.get('last_oid', '')).upper()
     
-    order_id_input = st.text_input("Enter your Order ID (from Tab 1)").upper()
-    
-    if order_id_input in st.session_state.orders:
-        order = st.session_state.orders[order_id_input]
+    if oid_input in st.session_state.orders:
+        order = st.session_state.orders[oid_input]
+        st.subheader(f"Paying for: {order['item']}")
         
-        st.write(f"### Order: {order['item']}")
-        st.write(f"**Total Amount:** ₦{order['price']:,}")
+        st.markdown(f"""
+        <div class="payment-box">
+            <h4>🏦 Transfer exactly ₦{order['price']:,} to:</h4>
+            <p><strong>Bank:</strong> OPay / Zenith / Kuda</p>
+            <p><strong>Account Name:</strong> ConfirmAm Services</p>
+            <p><strong>Account Number:</strong> 0123456789</p>
+            <p><i>Reference ID: {oid_input}</i></p>
+        </div>
+        """, unsafe_allow_html=True)
         
-        if order['status'] == "Pending Payment":
-            st.markdown("""
-            <div class="payment-box">
-                <h4>🏦 Pay into the ConfirmAm Vault</h4>
-                <p><strong>Bank:</strong> Zenith Bank</p>
-                <p><strong>Account Name:</strong> ConfirmAm Escrow Services</p>
-                <p><strong>Account Number:</strong> 1234567890</p>
-                <p><i>Reference: Enter your Order ID in the transfer narration.</i></p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.write("---")
-            st.write("**Step 2: Upload Proof of Transfer**")
-            receipt = st.file_uploader("Upload screenshot of bank receipt", type=['jpg', 'png', 'pdf'])
-            
-            if st.button("Submit Receipt for Verification"):
-                if receipt:
-                    order['receipt'] = receipt
-                    order['status'] = "Verifying..."
-                    st.rerun()
-                else:
-                    st.warning("Please upload a receipt first.")
-
-        elif order['status'] == "Verifying...":
-            st.warning("⏳ **Wait!** ConfirmAm is verifying your transfer. Sellers: DO NOT SHIP YET.")
-            st.image(order['receipt'], caption="Submitted Receipt", width=200)
-            
-            # Simulated Admin Approval (For your testing)
-            if st.button("Admin: Confirm Money is in Bank"):
-                order['status'] = "Money Secured"
-                st.rerun()
-
-        elif order['status'] == "Money Secured":
-            st.success("✅ **MONEY SECURED.** Seller, you can now ship the item safely.")
-            st.write("Buyer: Once you receive the item, click the button below to release the money.")
-            if st.button("Item Received (Release Money)"):
-                order['status'] = "Completed"
-                st.balloons()
+        st.write("---")
+        st.write("### ⚡ Fast-Track Verification")
+        st.write("Click below to send your transfer receipt directly to our WhatsApp for instant approval.")
+        
+        wa_text = f"Hello ConfirmAm! I just paid ₦{order['price']:,} for {order['item']} (Order ID: {oid_input}). Here is my receipt:"
+        wa_url = f"https://wa.me/{ADMIN_WHATSAPP}?text={wa_text.replace(' ', '%20')}"
+        
+        st.markdown(f'<a href="{wa_url}" target="_blank"><button style="width:100%; height:50px; background-color:#25D366; color:white; border:none; border-radius:25px; cursor:pointer; font-weight:bold;">📲 Send Receipt via WhatsApp</button></a>', unsafe_allow_html=True)
+        
+        st.divider()
+        st.caption("Once we confirm your receipt on WhatsApp, we will secure the funds and notify the seller to ship.")
     else:
-        st.write("Enter an ID to view payment status.")
+        st.info("Select an item from the shop to start a secure payment.")
