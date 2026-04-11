@@ -10,9 +10,9 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     .main { background-color: #ffffff; }
-    .auth-box { max-width: 400px; padding: 40px; border-radius: 20px; background-color: #f8f9fa; margin: auto; border: 1px solid #eee; }
-    .product-card { border: 1px solid #f0f0f0; padding: 15px; border-radius: 20px; background-color: #fff; text-align: center; }
-    .stButton>button { border-radius: 50px; font-weight: bold; }
+    .auth-box { max-width: 400px; padding: 40px; border-radius: 20px; background-color: #f8f9fa; margin: auto; border: 1px solid #eee; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+    .product-card { border: 1px solid #f0f0f0; padding: 15px; border-radius: 20px; background-color: #fff; text-align: center; margin-bottom: 20px; }
+    .stButton>button { border-radius: 50px; font-weight: bold; width: 100%; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -32,18 +32,18 @@ if not st.session_state.logged_in:
     st.markdown("<br><br>", unsafe_allow_html=True)
     with st.container():
         st.markdown('<div class="auth-box">', unsafe_allow_html=True)
-        st.title("ConfirmAm")
-        st.write("Secure Luxury Fashion Marketplace")
+        st.markdown("<h1 style='text-align: center;'>ConfirmAm</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: gray;'>Luxury Fashion & Secure Escrow</p>", unsafe_allow_html=True)
         
-        email = st.text_input("Email")
-        pwd = st.text_input("Password", type="password")
+        email = st.text_input("Email", key="login_email")
+        pwd = st.text_input("Password", type="password", key="login_pwd")
         
-        if st.button("Enter Boutique", use_container_width=True):
+        if st.button("Enter Boutique"):
             if email and pwd:
                 st.session_state.logged_in = True
                 st.rerun()
             else:
-                st.error("Please fill in all fields.")
+                st.error("Please enter credentials.")
         st.markdown('</div>', unsafe_allow_html=True)
 
 # --- THE MAIN MARKETPLACE ---
@@ -59,6 +59,7 @@ else:
     # Sidebar for Logout
     with st.sidebar:
         st.title("ConfirmAm")
+        st.write(f"Logged in as: {st.session_state.get('login_email', 'User')}")
         if st.button("Log Out"):
             st.session_state.logged_in = False
             st.rerun()
@@ -70,7 +71,7 @@ else:
         if not st.session_state.inventory:
             st.info("The gallery is currently being updated. Come back soon!")
         else:
-            cols = st.columns(2) # 2 items per row for mobile friendly view
+            cols = st.columns(2) 
             for idx, item in enumerate(st.session_state.inventory):
                 with cols[idx % 2]:
                     st.markdown(f'<div class="product-card"><h3>{item["name"]}</h3><h2>₦{item["price"]:,}</h2></div>', unsafe_allow_html=True)
@@ -79,17 +80,20 @@ else:
                         oid = str(uuid.uuid4())[:6].upper()
                         st.session_state.orders[oid] = {"item": item['name'], "price": item['price']}
                         st.session_state.last_oid = oid
-                        st.success(f"Order {oid} Created! Go to Payment Tab.")
+                        st.toast(f"Order {oid} Created!")
 
     with tab2:
         st.header("Merchant Dashboard")
-        with st.form("add_item"):
+        with st.form("add_item", clear_on_submit=True):
             name = st.text_input("Product Name")
             price = st.number_input("Price (₦)", min_value=100)
             img = st.file_uploader("Upload Product Photo")
             if st.form_submit_button("Post to Marketplace"):
-                st.session_state.inventory.append({"name": name, "price": price, "image": img})
-                st.rerun()
+                if name:
+                    st.session_state.inventory.append({"name": name, "price": price, "image": img})
+                    st.success("Item live!")
+                else:
+                    st.error("Please add a name.")
 
     with tab3:
         st.header("Confirm Your Purchase")
@@ -101,7 +105,7 @@ else:
             <div style="background-color:#f9f9f9; padding:20px; border-radius:15px; border-left: 5px solid #000;">
                 <h4>Paying for: {order['item']}</h4>
                 <h3>Amount: ₦{order['price']:,}</h3>
-                <p><b>Bank:</b> OPay / Zenith / Kuda<br><b>Name:</b> ConfirmAm Services<br><b>Acct:</b> 0123456789</p>
+                <p><b>Bank:</b> OPay<br><b>Name:</b> ConfirmAm Services<br><b>Acct:</b> 0123456789</p>
             </div>
             """, unsafe_allow_html=True)
             
