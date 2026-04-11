@@ -6,59 +6,66 @@ st.set_page_config(page_title="ConfirmAm", page_icon="✅")
 
 st.title("✅ ConfirmAm Escrow")
 st.write("The safest way to 'Pay Before Delivery' in Nigeria.")
-st.markdown("---")
 
-# Initialize storage for the app
+# Initialize storage
 if 'deals' not in st.session_state:
     st.session_state.deals = {}
 
-tab1, tab2 = st.tabs(["I am a Seller", "I am a Buyer"])
+tab1, tab2, tab3 = st.tabs(["I am a Seller", "I am a Buyer", "Policy & Help"])
 
 with tab1:
     st.header("Create a Secure Deal")
-    item_name = st.text_input("What are you selling?", placeholder="e.g. Vintage Silk Dress")
-    amount = st.number_input("Amount (₦)", min_value=100)
-    seller_bank = st.text_input("Your Bank Account (where we send the money)")
+    item_name = st.text_input("What are you selling?", placeholder="e.g. Modest 2-Piece Set")
+    base_price = st.number_input("Item Price (₦)", min_value=100, step=500)
+    
+    # Calculation (2.5% each side = 5% total)
+    fee_per_side = base_price * 0.025
+    buyer_total = base_price + fee_per_side
+    seller_receives = base_price - fee_per_side
+    
+    st.warning(f"📊 **Fee Breakdown (5% Total):**")
+    st.write(f"* Buyer pays: **₦{buyer_total:,.2f}** (Price + 2.5% safety fee)")
+    st.write(f"* You receive: **₦{seller_receives:,.2f}** (Price - 2.5% service fee)")
+    
+    seller_bank = st.text_input("Your Bank Account (for payout)")
     
     if st.button("Generate ConfirmAm ID"):
         if item_name and seller_bank:
             deal_id = str(uuid.uuid4())[:6].upper()
             st.session_state.deals[deal_id] = {
                 "item": item_name,
-                "price": amount,
+                "price": buyer_total,
+                "seller_net": seller_receives,
                 "status": "Awaiting Payment",
                 "bank": seller_bank
             }
             st.success(f"Deal Created! Share this ID with your buyer: **{deal_id}**")
-        else:
-            st.error("Please fill in all fields!")
 
 with tab2:
     st.header("Verify & Pay")
-    search_id = st.text_input("Enter the ConfirmAm ID from the seller").upper()
+    search_id = st.text_input("Enter the ConfirmAm ID").upper()
     
     if search_id in st.session_state.deals:
         deal = st.session_state.deals[search_id]
-        st.info(f"**Item:** {deal['item']} | **Price:** ₦{deal['price']}")
+        st.info(f"**Item:** {deal['item']} | **Total to Pay:** ₦{deal['price']:,.2f}")
+        st.caption("This includes the 2.5% ConfirmAm protection fee.")
         
         if deal['status'] == "Awaiting Payment":
-            st.warning("Status: Awaiting your payment.")
-            if st.button("Pay into ConfirmAm Vault"):
+            if st.button("Pay into Secure Vault"):
                 deal['status'] = "Money Secured"
-                st.success("Payment successful! We are holding the money. Tell the seller to ship!")
+                st.success("Payment Received! We are holding the money safely.")
         
         elif deal['status'] == "Money Secured":
-            st.success("✅ Money is Secure in our Vault.")
-            st.write("Has the item been delivered exactly as described?")
-            if st.button("YES, ConfirmAm & Release Funds"):
+            st.warning("⚠️ Money is held by ConfirmAm.")
+            if st.button("I Have Received My Item (Release Funds)"):
                 deal['status'] = "Completed"
                 st.balloons()
-                st.success(f"Funds have been released to the seller! Thank you for using ConfirmAm.")
-        
-        elif deal['status'] == "Completed":
-            st.info("This transaction is already completed.")
+                st.success(f"Funds released! ₦{deal['seller_net']:,.2f} is being sent to the seller.")
     elif search_id:
-        st.error("Invalid ID. Please check with the seller.")
+        st.error("Invalid ID.")
 
-st.markdown("---")
-st.caption("ConfirmAm: Building trust, one delivery at a time.")
+with tab3:
+    st.header("Trust & Safety")
+    st.write("ConfirmAm charges a 2.5% fee to both parties to ensure a 100% scam-free environment.")
+    # Add your WhatsApp number below by replacing the 07046481507
+    st.link_button("Chat with Support", "https://wa.me/2340000000000")
