@@ -1,82 +1,110 @@
 import streamlit as st
 import uuid
+from PIL import Image
 
-# Set page style
-st.set_page_config(page_title="ConfirmAm", page_icon="✅")
+# 1. Page Configuration & Professional Styling
+st.set_page_config(page_title="ConfirmAm Escrow", page_icon="🛡️", layout="centered")
 
-# Custom CSS for a professional look
 st.markdown("""
     <style>
-    .main { background-color: #f5f7f9; }
-    .stButton>button { width: 100%; border-radius: 20px; background-color: #007bff; color: white; height: 3em; font-weight: bold;}
-    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
-    .stTabs [data-baseweb="tab"] { background-color: #f0f2f6; border-radius: 10px 10px 0 0; padding: 10px 20px; }
+    .main { background-color: #f8f9fa; }
+    .stButton>button { width: 100%; border-radius: 25px; height: 3em; background-color: #007bff; color: white; font-weight: bold; }
+    .deal-card { padding: 20px; border-radius: 15px; background-color: white; border: 1px solid #e0e0e0; margin-bottom: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("✅ ConfirmAm Escrow")
-st.write("The safest way to 'Pay Before Delivery' in Nigeria.")
-
-# Initialize storage for the session
+# 2. Initialize our "Database" (Temporary)
 if 'deals' not in st.session_state:
     st.session_state.deals = {}
 
-tab1, tab2, tab3 = st.tabs(["I am a Seller", "I am a Buyer", "Policy & Help"])
+st.title("🛡️ ConfirmAm Escrow")
+st.write("Secure 'Pay Before Delivery' transactions for Nigerian Social Commerce.")
 
+tab1, tab2, tab3 = st.tabs(["📤 Create Deal (Seller)", "📥 Complete Deal (Buyer)", "ℹ️ How it Works"])
+
+# --- SELLER TAB ---
 with tab1:
-    st.header("Create a Secure Deal")
-    item_name = st.text_input("What are you selling?", placeholder="e.g. Handkerchief Skirt Set")
-    display_price = st.number_input("Price for the Buyer (₦)", min_value=100, step=500)
+    st.header("Start a New Transaction")
     
-    # Logic: 5% total is taken from the Display Price
-    total_fee = display_price * 0.05
-    seller_receives = display_price - total_fee
-    
-    st.info(f"📊 **Price Summary:**")
-    st.write(f"* Buyer pays exactly: **₦{display_price:,.2f}**")
-    st.write(f"* You will receive: **₦{seller_receives:,.2f}**")
-    st.caption(f"ConfirmAm takes a 5% service fee (₦{total_fee:,.2f}) to secure the deal.")
-    
-    seller_bank = st.text_input("Your Bank Account (for payout)")
-    
-    if st.button("Generate Secure Deal ID"):
-        if item_name and seller_bank:
-            deal_id = str(uuid.uuid4())[:6].upper()
-            st.session_state.deals[deal_id] = {
-                "item": item_name,
-                "price": display_price,
-                "seller_net": seller_receives,
-                "status": "Awaiting Payment",
-                "bank": seller_bank
-            }
-            st.success(f"Deal Created! Share this ID with your buyer: **{deal_id}**")
+    with st.container():
+        item_name = st.text_input("Item Name", placeholder="e.g. Vintage Silk Two-Piece")
+        item_img = st.file_uploader("Upload Item Photo (Optional)", type=['jpg', 'png', 'jpeg'])
+        
+        # The "Invisible Fee" Math
+        raw_price = st.number_input("Selling Price (₦)", min_value=100, step=500, value=5000)
+        total_fee = raw_price * 0.05
+        seller_payout = raw_price - total_fee
+        
+        st.info(f"💡 **Buyer pays exactly ₦{raw_price:,.2f}**. You receive ₦{seller_payout:,.2f} after our 5% security fee.")
+        
+        seller_bank = st.text_input("Your Bank Account Details (for payout)")
+        
+        if st.button("Create Secure Deal Link"):
+            if item_name and seller_bank:
+                deal_id = str(uuid.uuid4())[:8].upper()
+                st.session_state.deals[deal_id] = {
+                    "item": item_name,
+                    "price": raw_price,
+                    "payout": seller_payout,
+                    "status": "Awaiting Payment",
+                    "image": item_img,
+                    "bank": seller_bank
+                }
+                st.success(f"Deal Created! ID: {deal_id}")
+                
+                # WhatsApp Shortcut
+                wa_msg = f"Hello! I've created a secure deal for the {item_name} on ConfirmAm. Use ID: {deal_id} at confirmam-fehi.streamlit.app to pay safely."
+                st.markdown(f"[📲 Send Deal to Buyer via WhatsApp](https://wa.me/?text={wa_msg.replace(' ', '%20')})")
+            else:
+                st.warning("Please fill in the Item Name and Bank details.")
 
+# --- BUYER TAB ---
 with tab2:
-    st.header("Secure Payment")
-    search_id = st.text_input("Enter the Deal ID from your Seller").upper()
+    st.header("Secure Your Purchase")
+    search_id = st.text_input("Enter the 8-digit Deal ID").upper()
     
     if search_id in st.session_state.deals:
-        deal = st.session_state.deals[search_id]
-        st.info(f"**Item:** {deal['item']}")
-        st.metric("Amount to Pay", f"₦{deal['price']:,.2f}")
+        d = st.session_state.deals[search_id]
         
-        if deal['status'] == "Awaiting Payment":
-            if st.button("Pay into Secure Vault"):
-                deal['status'] = "Money Secured"
-                st.success("Payment Received! ConfirmAm is now holding the money safely.")
-        
-        elif deal['status'] == "Money Secured":
-            st.warning("⚠️ Money is held by ConfirmAm.")
-            if st.button("I Have Received My Item (Release Funds)"):
-                deal['status'] = "Completed"
-                st.balloons()
-                st.success(f"Funds released! ₦{deal['seller_net']:,.2f} is being sent to the seller.")
-    elif search_id:
-        st.error("Invalid ID.")
+        with st.expander("📦 View Deal Details", expanded=True):
+            if d['image']:
+                st.image(d['image'], width=300)
+            st.subheader(d['item'])
+            st.metric("Amount to Pay", f"₦{d['price']:,.2f}")
+            st.write(f"**Current Status:** {d['status']}")
+            
+            # Progress Bar for trust
+            steps = {"Awaiting Payment": 0, "Paid (In Escrow)": 50, "Shipped": 75, "Completed": 100}
+            st.progress(steps.get(d['status'], 0))
 
+        if d['status'] == "Awaiting Payment":
+            if st.button("Confirm Payment (I have sent the ₦)"):
+                d['status'] = "Paid (In Escrow)"
+                st.rerun()
+        
+        elif d['status'] == "Paid (In Escrow)":
+            st.success("✅ Money is secured in the ConfirmAm Vault.")
+            if st.button("Mark as Shipped (Seller Only)"):
+                d['status'] = "Shipped"
+                st.rerun()
+                
+        elif d['status'] == "Shipped":
+            st.warning("🚚 Item is on the way!")
+            if st.button("I have Received my Item (Release Funds)"):
+                d['status'] = "Completed"
+                st.balloons()
+                st.rerun()
+                
+        elif d['status'] == "Completed":
+            st.success("Transaction Finished. Funds are being processed to the seller.")
+    
+    elif search_id:
+        st.error("Deal ID not found. Check with the seller.")
+
+# --- HELP TAB ---
 with tab3:
-    st.header("Trust & Safety")
-    st.write("**Why use ConfirmAm?**")
-    st.write("1. **No Scams:** We hold the money until the buyer confirms delivery.")
-    # Add your WhatsApp number below by replacing the 0000000000
-    st.link_button("Chat with Support", "https://wa.me/2340000000000")
+    st.header("Why use ConfirmAm?")
+    st.write("**For Buyers:** No more 'Pay before delivery' scams. We hold your money until you touch the item.")
+    st.write("**For Sellers:** Stop being ghosted by 'Pay on Delivery' buyers. Know the money is secured before you ship.")
+    st.divider()
+    st.caption("ConfirmAm Charge: 5% flat fee (taken from the final payout).")
