@@ -1,91 +1,119 @@
 import streamlit as st
 import uuid
 
-# 1. Page Config
-st.set_page_config(page_title="ConfirmAm Marketplace", page_icon="🛡️", layout="wide")
+# 1. Premium Page Configuration
+st.set_page_config(page_title="ConfirmAm Premium", page_icon="✨", layout="wide")
 
-# 2. Styling
+# 2. "High-End" Custom Styling
 st.markdown("""
     <style>
-    .main { background-color: #f8f9fa; }
-    .product-card { background-color: white; padding: 20px; border-radius: 15px; border: 1px solid #eee; text-align: center; box-shadow: 0px 4px 10px rgba(0,0,0,0.05); }
-    .payment-box { background-color: #f0fff4; padding: 20px; border-radius: 15px; border: 2px solid #28a745; color: #155724; }
-    .wa-button { background-color: #25D366 !important; color: white !important; font-weight: bold !important; border-radius: 25px !important; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+    .main { background-color: #ffffff; }
+    .stHeader { background-color: #000000; padding: 20px; color: white; border-radius: 0 0 20px 20px; }
+    .product-card {
+        border: 1px solid #f0f0f0;
+        padding: 15px;
+        border-radius: 20px;
+        transition: 0.3s;
+        background-color: #fff;
+    }
+    .product-card:hover { box-shadow: 0px 10px 20px rgba(0,0,0,0.05); transform: translateY(-5px); }
+    .price-tag { color: #000; font-weight: 700; font-size: 1.2em; }
+    .buy-btn { 
+        background-color: #000 !important; 
+        color: #fff !important; 
+        border-radius: 50px !important; 
+        border: none !important;
+        font-weight: 600 !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Database
+# 3. Data Initialization
 if 'inventory' not in st.session_state:
     st.session_state.inventory = []
 if 'orders' not in st.session_state:
     st.session_state.orders = {}
 
-# YOUR WHATSAPP NUMBER (International format without +)
-# CHANGE THIS TO YOUR REAL NUMBER SO YOU GET THE MESSAGES
-ADMIN_WHATSAPP = "2348012345678" 
+# YOUR BUSINESS SETTINGS
+ADMIN_WA = "2348012345678" # Put your real WhatsApp number here
 
-st.title("🛡️ ConfirmAm Marketplace")
+# --- HEADER SECTION ---
+st.markdown('<div class="stHeader"><h1 style="margin:0;">ConfirmAm</h1><p style="opacity:0.8;">The Luxury Standard for Secure Nigerian Fashion</p></div>', unsafe_allow_html=True)
+st.write("")
 
-tab1, tab2, tab3 = st.tabs(["🛒 Browse Shop", "📤 Seller Dashboard", "💳 Payment & Security"])
+# --- NAVIGATION ---
+tab1, tab2, tab3 = st.tabs(["✨ Explore Collection", "📈 Seller Suite", "🔒 Security Vault"])
 
-# --- SHOP ---
+# --- TAB 1: PREMIUM SHOP ---
 with tab1:
-    st.header("Latest Marketplace Items")
+    col_s, col_f = st.columns([2, 1])
+    with col_s:
+        search = st.text_input("🔍 Search for your style...", placeholder="Search for dresses, sets, etc.")
+    with col_f:
+        category = st.selectbox("Category", ["All Items", "Dresses", "Two-Pieces", "Accessories"])
+
+    st.write("---")
+    
     if not st.session_state.inventory:
-        st.info("Shop is empty. List something!")
+        st.info("The collection is currently being curated. Check back shortly!")
     else:
-        cols = st.columns(3)
+        # Displaying products in a clean grid
+        cols = st.columns(4) # 4 items per row for a "Pro" look
         for idx, item in enumerate(st.session_state.inventory):
-            with cols[idx % 3]:
-                st.markdown(f'<div class="product-card"><h3>{item["name"]}</h3><h2>₦{item["price"]:,}</h2></div>', unsafe_allow_html=True)
+            with cols[idx % 4]:
+                st.markdown(f"""
+                <div class="product-card">
+                    <p style="color:gray; font-size:0.8em; text-transform:uppercase; margin-bottom:5px;">{item.get('cat', 'New Arrival')}</p>
+                    <h3 style="margin:0;">{item['name']}</h3>
+                    <p class="price-tag">₦{item['price']:,}</p>
+                </div>
+                """, unsafe_allow_html=True)
                 if item['image']: st.image(item['image'], use_container_width=True)
                 
-                if st.button(f"Buy Now: {item['name']}", key=f"buy_{idx}"):
+                if st.button(f"Secure Purchase", key=f"buy_{idx}", help="Click to buy via ConfirmAm Escrow"):
                     oid = str(uuid.uuid4())[:6].upper()
                     st.session_state.orders[oid] = {"item": item['name'], "price": item['price'], "status": "Pending"}
                     st.session_state.last_oid = oid
-                    st.success(f"Order Created! ID: {oid}")
+                    st.toast(f"Order {oid} created! Proceed to Security Vault.", icon="✅")
 
-# --- SELLER ---
+# --- TAB 2: SELLER SUITE ---
 with tab2:
-    st.header("List a New Product")
-    with st.form("add_item"):
-        name = st.text_input("Product Name")
-        price = st.number_input("Price (₦)", min_value=100)
-        img = st.file_uploader("Upload Image", type=['jpg', 'png'])
-        if st.form_submit_button("List Now"):
-            st.session_state.inventory.append({"name": name, "price": price, "image": img})
-            st.rerun()
+    st.header("Merchant Dashboard")
+    with st.expander("Add New Product to Catalog"):
+        name = st.text_input("Product Title")
+        price = st.number_input("Market Price (₦)", min_value=100)
+        cat = st.selectbox("Product Category", ["Dresses", "Two-Pieces", "Accessories", "Other"])
+        img = st.file_uploader("High-Resolution Product Image", type=['jpg', 'png'])
+        if st.button("Publish to Marketplace"):
+            st.session_state.inventory.append({"name": name, "price": price, "image": img, "cat": cat})
+            st.success("Product published successfully.")
 
-# --- PAYMENT ---
+# --- TAB 3: SECURITY VAULT ---
 with tab3:
-    st.header("Confirm Your Secure Payment")
-    oid_input = st.text_input("Enter Order ID", value=st.session_state.get('last_oid', '')).upper()
+    st.header("Secure Payment Verification")
+    oid_in = st.text_input("Enter Order Reference", value=st.session_state.get('last_oid', '')).upper()
     
-    if oid_input in st.session_state.orders:
-        order = st.session_state.orders[oid_input]
-        st.subheader(f"Paying for: {order['item']}")
-        
-        st.markdown(f"""
-        <div class="payment-box">
-            <h4>🏦 Transfer exactly ₦{order['price']:,} to:</h4>
-            <p><strong>Bank:</strong> OPay / Zenith / Kuda</p>
-            <p><strong>Account Name:</strong> ConfirmAm Services</p>
-            <p><strong>Account Number:</strong> 0123456789</p>
-            <p><i>Reference ID: {oid_input}</i></p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.write("---")
-        st.write("### ⚡ Fast-Track Verification")
-        st.write("Click below to send your transfer receipt directly to our WhatsApp for instant approval.")
-        
-        wa_text = f"Hello ConfirmAm! I just paid ₦{order['price']:,} for {order['item']} (Order ID: {oid_input}). Here is my receipt:"
-        wa_url = f"https://wa.me/{ADMIN_WHATSAPP}?text={wa_text.replace(' ', '%20')}"
-        
-        st.markdown(f'<a href="{wa_url}" target="_blank"><button style="width:100%; height:50px; background-color:#25D366; color:white; border:none; border-radius:25px; cursor:pointer; font-weight:bold;">📲 Send Receipt via WhatsApp</button></a>', unsafe_allow_html=True)
-        
-        st.divider()
-        st.caption("Once we confirm your receipt on WhatsApp, we will secure the funds and notify the seller to ship.")
+    if oid_in in st.session_state.orders:
+        order = st.session_state.orders[oid_in]
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown(f"""
+            <div style="background-color:#f9f9f9; padding:30px; border-radius:20px;">
+                <h2 style="margin-top:0;">Payment Summary</h2>
+                <p>Item: <b>{order['item']}</b></p>
+                <p>Order ID: <b>{oid_in}</b></p>
+                <h1 style="color:#000;">₦{order['price']:,}</h1>
+            </div>
+            """, unsafe_allow_html=True)
+        with c2:
+            st.write("### 🏦 Vault Bank Details")
+            st.code("Bank: Kuda Bank\nName: ConfirmAm Services\nAcct: 0123456789", language="text")
+            
+            wa_msg = f"Hello! I've just paid ₦{order['price']:,} for the {order['item']} (ID: {oid_in})."
+            wa_url = f"https://wa.me/{ADMIN_WA}?text={wa_msg.replace(' ', '%20')}"
+            
+            st.markdown(f'<a href="{wa_url}" target="_blank"><button style="width:100%; height:50px; background-color:#000; color:white; border:none; border-radius:50px; cursor:pointer; font-weight:bold;">📲 VERIFY PAYMENT VIA WHATSAPP</button></a>', unsafe_allow_html=True)
     else:
-        st.info("Select an item from the shop to start a secure payment.")
+        st.write("Enter an active Order Reference to proceed with secure payment.")
