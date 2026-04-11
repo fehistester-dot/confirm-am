@@ -1,119 +1,114 @@
 import streamlit as st
 import uuid
 
-# 1. Premium Page Configuration
-st.set_page_config(page_title="ConfirmAm Premium", page_icon="✨", layout="wide")
+# 1. High-End Page Configuration
+st.set_page_config(page_title="ConfirmAm | Luxury Escrow", page_icon="✨", layout="wide")
 
-# 2. "High-End" Custom Styling
+# 2. Professional Custom Styling
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     .main { background-color: #ffffff; }
-    .stHeader { background-color: #000000; padding: 20px; color: white; border-radius: 0 0 20px 20px; }
-    .product-card {
-        border: 1px solid #f0f0f0;
-        padding: 15px;
-        border-radius: 20px;
-        transition: 0.3s;
-        background-color: #fff;
-    }
-    .product-card:hover { box-shadow: 0px 10px 20px rgba(0,0,0,0.05); transform: translateY(-5px); }
-    .price-tag { color: #000; font-weight: 700; font-size: 1.2em; }
-    .buy-btn { 
-        background-color: #000 !important; 
-        color: #fff !important; 
-        border-radius: 50px !important; 
-        border: none !important;
-        font-weight: 600 !important;
-    }
+    .auth-box { max-width: 400px; padding: 40px; border-radius: 20px; background-color: #f8f9fa; margin: auto; border: 1px solid #eee; }
+    .product-card { border: 1px solid #f0f0f0; padding: 15px; border-radius: 20px; background-color: #fff; text-align: center; }
+    .stButton>button { border-radius: 50px; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Data Initialization
+# 3. Data & Session Initialization
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
 if 'inventory' not in st.session_state:
     st.session_state.inventory = []
 if 'orders' not in st.session_state:
     st.session_state.orders = {}
 
-# YOUR BUSINESS SETTINGS
-ADMIN_WA = "2348012345678" # Put your real WhatsApp number here
+# SETTINGS
+ADMIN_WA = "2348012345678" # Your WhatsApp Number
 
-# --- HEADER SECTION ---
-st.markdown('<div class="stHeader"><h1 style="margin:0;">ConfirmAm</h1><p style="opacity:0.8;">The Luxury Standard for Secure Nigerian Fashion</p></div>', unsafe_allow_html=True)
-st.write("")
+# --- LOGIN GATE ---
+if not st.session_state.logged_in:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    with st.container():
+        st.markdown('<div class="auth-box">', unsafe_allow_html=True)
+        st.title("ConfirmAm")
+        st.write("Secure Luxury Fashion Marketplace")
+        
+        email = st.text_input("Email")
+        pwd = st.text_input("Password", type="password")
+        
+        if st.button("Enter Boutique", use_container_width=True):
+            if email and pwd:
+                st.session_state.logged_in = True
+                st.rerun()
+            else:
+                st.error("Please fill in all fields.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-# --- NAVIGATION ---
-tab1, tab2, tab3 = st.tabs(["✨ Explore Collection", "📈 Seller Suite", "🔒 Security Vault"])
+# --- THE MAIN MARKETPLACE ---
+else:
+    # Top Premium Greeting Banner
+    st.markdown("""
+        <div style="background-color:#000; color:#d4af37; padding:20px; border-radius:15px; text-align:center; margin-bottom:25px; border: 1px solid #d4af37;">
+            <h2 style="margin:0;">Welcome to the Collection ✨</h2>
+            <p style="margin:5px 0 0 0; opacity:0.9;">Verified Buyer: <b>Safe & Secure Escrow Active</b></p>
+        </div>
+    """, unsafe_allow_html=True)
 
-# --- TAB 1: PREMIUM SHOP ---
-with tab1:
-    col_s, col_f = st.columns([2, 1])
-    with col_s:
-        search = st.text_input("🔍 Search for your style...", placeholder="Search for dresses, sets, etc.")
-    with col_f:
-        category = st.selectbox("Category", ["All Items", "Dresses", "Two-Pieces", "Accessories"])
+    # Sidebar for Logout
+    with st.sidebar:
+        st.title("ConfirmAm")
+        if st.button("Log Out"):
+            st.session_state.logged_in = False
+            st.rerun()
 
-    st.write("---")
-    
-    if not st.session_state.inventory:
-        st.info("The collection is currently being curated. Check back shortly!")
-    else:
-        # Displaying products in a clean grid
-        cols = st.columns(4) # 4 items per row for a "Pro" look
-        for idx, item in enumerate(st.session_state.inventory):
-            with cols[idx % 4]:
-                st.markdown(f"""
-                <div class="product-card">
-                    <p style="color:gray; font-size:0.8em; text-transform:uppercase; margin-bottom:5px;">{item.get('cat', 'New Arrival')}</p>
-                    <h3 style="margin:0;">{item['name']}</h3>
-                    <p class="price-tag">₦{item['price']:,}</p>
-                </div>
-                """, unsafe_allow_html=True)
-                if item['image']: st.image(item['image'], use_container_width=True)
-                
-                if st.button(f"Secure Purchase", key=f"buy_{idx}", help="Click to buy via ConfirmAm Escrow"):
-                    oid = str(uuid.uuid4())[:6].upper()
-                    st.session_state.orders[oid] = {"item": item['name'], "price": item['price'], "status": "Pending"}
-                    st.session_state.last_oid = oid
-                    st.toast(f"Order {oid} created! Proceed to Security Vault.", icon="✅")
+    tab1, tab2, tab3 = st.tabs(["🛍️ Shop", "📤 Sell", "🔒 Payment"])
 
-# --- TAB 2: SELLER SUITE ---
-with tab2:
-    st.header("Merchant Dashboard")
-    with st.expander("Add New Product to Catalog"):
-        name = st.text_input("Product Title")
-        price = st.number_input("Market Price (₦)", min_value=100)
-        cat = st.selectbox("Product Category", ["Dresses", "Two-Pieces", "Accessories", "Other"])
-        img = st.file_uploader("High-Resolution Product Image", type=['jpg', 'png'])
-        if st.button("Publish to Marketplace"):
-            st.session_state.inventory.append({"name": name, "price": price, "image": img, "cat": cat})
-            st.success("Product published successfully.")
+    with tab1:
+        st.header("Latest Arrivals")
+        if not st.session_state.inventory:
+            st.info("The gallery is currently being updated. Come back soon!")
+        else:
+            cols = st.columns(2) # 2 items per row for mobile friendly view
+            for idx, item in enumerate(st.session_state.inventory):
+                with cols[idx % 2]:
+                    st.markdown(f'<div class="product-card"><h3>{item["name"]}</h3><h2>₦{item["price"]:,}</h2></div>', unsafe_allow_html=True)
+                    if item['image']: st.image(item['image'], use_container_width=True)
+                    if st.button(f"Secure Buy", key=f"buy_{idx}"):
+                        oid = str(uuid.uuid4())[:6].upper()
+                        st.session_state.orders[oid] = {"item": item['name'], "price": item['price']}
+                        st.session_state.last_oid = oid
+                        st.success(f"Order {oid} Created! Go to Payment Tab.")
 
-# --- TAB 3: SECURITY VAULT ---
-with tab3:
-    st.header("Secure Payment Verification")
-    oid_in = st.text_input("Enter Order Reference", value=st.session_state.get('last_oid', '')).upper()
-    
-    if oid_in in st.session_state.orders:
-        order = st.session_state.orders[oid_in]
-        c1, c2 = st.columns(2)
-        with c1:
+    with tab2:
+        st.header("Merchant Dashboard")
+        with st.form("add_item"):
+            name = st.text_input("Product Name")
+            price = st.number_input("Price (₦)", min_value=100)
+            img = st.file_uploader("Upload Product Photo")
+            if st.form_submit_button("Post to Marketplace"):
+                st.session_state.inventory.append({"name": name, "price": price, "image": img})
+                st.rerun()
+
+    with tab3:
+        st.header("Confirm Your Purchase")
+        oid_in = st.text_input("Enter Order ID", value=st.session_state.get('last_oid', '')).upper()
+        
+        if oid_in in st.session_state.orders:
+            order = st.session_state.orders[oid_in]
             st.markdown(f"""
-            <div style="background-color:#f9f9f9; padding:30px; border-radius:20px;">
-                <h2 style="margin-top:0;">Payment Summary</h2>
-                <p>Item: <b>{order['item']}</b></p>
-                <p>Order ID: <b>{oid_in}</b></p>
-                <h1 style="color:#000;">₦{order['price']:,}</h1>
+            <div style="background-color:#f9f9f9; padding:20px; border-radius:15px; border-left: 5px solid #000;">
+                <h4>Paying for: {order['item']}</h4>
+                <h3>Amount: ₦{order['price']:,}</h3>
+                <p><b>Bank:</b> OPay / Zenith / Kuda<br><b>Name:</b> ConfirmAm Services<br><b>Acct:</b> 0123456789</p>
             </div>
             """, unsafe_allow_html=True)
-        with c2:
-            st.write("### 🏦 Vault Bank Details")
-            st.code("Bank: Kuda Bank\nName: ConfirmAm Services\nAcct: 0123456789", language="text")
             
-            wa_msg = f"Hello! I've just paid ₦{order['price']:,} for the {order['item']} (ID: {oid_in})."
-            wa_url = f"https://wa.me/{ADMIN_WA}?text={wa_msg.replace(' ', '%20')}"
+            wa_text = f"Hello! I've paid ₦{order['price']:,} for the {order['item']} (ID: {oid_in})."
+            wa_url = f"https://wa.me/{ADMIN_WA}?text={wa_text.replace(' ', '%20')}"
             
-            st.markdown(f'<a href="{wa_url}" target="_blank"><button style="width:100%; height:50px; background-color:#000; color:white; border:none; border-radius:50px; cursor:pointer; font-weight:bold;">📲 VERIFY PAYMENT VIA WHATSAPP</button></a>', unsafe_allow_html=True)
-    else:
-        st.write("Enter an active Order Reference to proceed with secure payment.")
+            st.write("")
+            st.markdown(f'<a href="{wa_url}" target="_blank"><button style="width:100%; height:50px; background-color:#25D366; color:white; border:none; border-radius:50px; cursor:pointer; font-weight:bold;">📲 VERIFY VIA WHATSAPP</button></a>', unsafe_allow_html=True)
+        else:
+            st.info("Your order details will appear here once you select an item.")
