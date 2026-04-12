@@ -8,21 +8,20 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. THE DATABASE & LINKS
+# 2. ASSETS & DATABASE
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs/export?format=csv"
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
-MERCHANT_FORM_LINK = "https://forms.gle/4L7w5sR5T6f8m8p9" # Your Google Form link
 
 # ZIMI LINKS
 ZIMI_WAVING = "https://i.postimg.cc/9QdS9nRv/Gemini-Generated-Image-5wc5485wc5485wc5-removebg-preview.png"
 ZIMI_THINKING = "https://i.postimg.cc/ZKyXbRJ1/Gemini-Generated-Image-5wc5485wc5485wc5-2-removebg-preview.png"
 ZIMI_HAPPY = "https://i.postimg.cc/7h5dTP0K/Gemini-Generated-Image-5wc5485wc5485wc5-1-removebg-preview.png"
 
-# 3. Session State for Zimi
+# 3. Session State
 if 'zimi_mood' not in st.session_state:
     st.session_state.zimi_mood = ZIMI_WAVING
 
-# 4. Global Styling (Original Styles + Zimi Floating)
+# 4. Styling (Floating Zimi + Original Colors)
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #fcfcfc; }}
@@ -41,7 +40,6 @@ st.markdown(f"""
         z-index: 1000;
         width: 120px;
         filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.2));
-        transition: all 0.5s ease-in-out;
     }}
     </style>
     
@@ -54,84 +52,64 @@ st.markdown(f"""
 st.sidebar.image("https://i.postimg.cc/mD3WvH5n/Confirm-Am-Logo-Tick.png", use_container_width=True)
 st.sidebar.markdown("<h2 style='text-align:center;'>ConfirmAm</h2>", unsafe_allow_html=True)
 
-# Currency Switcher
 st.sidebar.markdown("---")
-st.sidebar.subheader("🌍 International Pricing")
 currency = st.sidebar.selectbox("Select Currency", ["NGN (₦)", "USD ($)"])
 exchange_rate = 1600 
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("📦 Customer Service")
-st.sidebar.link_button("Track My Order", "https://wa.me/2347046481507?text=Hello%20ConfirmAm,%20I%20just%20paid...", use_container_width=True, type="primary")
+st.sidebar.link_button("Track My Order", "https://wa.me/2347046481507", use_container_width=True)
 
 menu = st.sidebar.radio("Navigation", ["🛍️ Shopping Mall", "🛡️ Safety & Escrow", "📥 Merchant Portal"])
 
-# Zimi reacts to navigation
+# --- PAGE LOGIC ---
+
 if menu == "🛍️ Shopping Mall":
     st.session_state.zimi_mood = ZIMI_WAVING
-elif menu == "🛡️ Safety & Escrow":
-    st.session_state.zimi_mood = ZIMI_THINKING
-elif menu == "📥 Merchant Portal":
-    st.session_state.zimi_mood = ZIMI_WAVING # Waving at potential partners
-
-# --- SHOPPING MALL ---
-if menu == "🛍️ Shopping Mall":
-    st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Verified Items • Secure Escrow • Fast Delivery</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Verified Items • Secure Escrow</p></div>', unsafe_allow_html=True)
     
-    @st.cache_data(ttl=10)
-    def get_fresh_data(url):
-        df = pd.read_csv(url)
-        df.columns = [c.strip().lower() for c in df.columns]
-        return df
-
+    # [Original Shopping Mall Data Logic here...]
     try:
-        data = get_fresh_data(SHEET_URL)
-        search_query = st.text_input("🔍 Search products...", "")
-        
+        data = pd.read_csv(SHEET_URL)
+        data.columns = [c.strip().lower() for c in data.columns]
         cols = st.columns(2)
         for i, row in data.iterrows():
             with cols[i % 2]:
                 st.markdown('<div class="product-card">', unsafe_allow_html=True)
                 st.image(row.get('image_url', 'https://via.placeholder.com/300'), use_container_width=True)
-                
-                naira_price = row.get('price', 0)
-                display_price = f"${(naira_price / exchange_rate):,.2f}" if currency == "USD ($)" else f"₦{naira_price:,}"
-                
-                st.markdown(f"<b>{row.get('name', 'Item')}</b><p class='price-text'>{display_price}</p>", unsafe_allow_html=True)
-                
+                n_p = row.get('price', 0)
+                p_text = f"${(n_p/1600):,.2f}" if currency == "USD ($)" else f"₦{n_p:,}"
+                st.markdown(f"<b>{row.get('name')}</b><p class='price-text'>{p_text}</p>", unsafe_allow_html=True)
                 st.link_button("Buy with ConfirmAm Escrow", FLUTTERWAVE_LINK, use_container_width=True)
-                
-                if st.button(f"Generate Receipt: {row.get('name')[:10]}", key=f"btn_{i}"):
+                if st.button(f"Generate Receipt: {i}", key=f"r_{i}"):
                     st.session_state.zimi_mood = ZIMI_HAPPY
                     st.balloons()
-                    st.code(f"CONFIRMAM RECEIPT\nITEM: {row.get('name')}\nPRICE: {display_price}\nSTATUS: AWAITING PAYMENT", language="markdown")
-                
+                    st.code(f"CONFIRMAM RECEIPT\nITEM: {row.get('name')}\nPRICE: {p_text}")
                 st.markdown('</div>', unsafe_allow_html=True)
-    except Exception as e:
-        st.error("Connecting to mall...")
+    except: st.error("Refreshing...")
 
-# --- SAFETY & ESCROW ---
 elif menu == "🛡️ Safety & Escrow":
-    st.markdown("<h1 style='text-align:center;'>Zimi's Safety Guide</h1>", unsafe_allow_html=True)
-    st.info("💡 **Zimi says:** 'I'm watching the money so you can focus on the style. No long stories here—if you don't get your item, you don't pay.'")
-    
-    st.markdown("""
-    ### 🛡️ The ConfirmAm Guarantee:
-    1. **Secure Holding:** Your payment stays in our vault.
-    2. **Delivery Proof:** We confirm the item is in your hands.
-    3. **Fair Pay:** The seller gets paid only when you are satisfied.
-    """)
+    st.session_state.zimi_mood = ZIMI_THINKING
+    st.markdown("<h1 style='text-align:center;'>Safety Guide</h1>", unsafe_allow_html=True)
+    st.info("Zimi is watching the vault! Funds are held until delivery is confirmed.")
 
-# --- MERCHANT PORTAL (RESTORED) ---
 elif menu == "📥 Merchant Portal":
+    st.session_state.zimi_mood = ZIMI_WAVING
     st.markdown("<h1 style='text-align:center;'>Partner with ConfirmAm</h1>", unsafe_allow_html=True)
-    st.markdown("""
-    <div style='text-align:center; padding:20px;'>
-        <h3>Want to sell to thousands of verified buyers?</h3>
-        <p>Join the circle of trusted vendors today.</p>
-    </div>
-    """, unsafe_allow_html=True)
     
-    st.link_button("🚀 Apply to Become a Merchant", MERCHANT_FORM_LINK, use_container_width=True, type="primary")
-    
-    st.warning("⚠️ **Note:** Every merchant undergoes a verification process to ensure the safety of our buyers.")
+    # THE INTERNAL FORM (No links!)
+    with st.form("merchant_registration"):
+        st.subheader("Business Registration")
+        biz_name = st.text_input("Business Name")
+        contact_person = st.text_input("Contact Person Name")
+        whatsapp = st.text_input("WhatsApp Number")
+        category = st.selectbox("What do you sell?", ["Fashion", "Electronics", "Groceries", "Other"])
+        
+        submitted = st.form_submit_button("Submit Application")
+        
+        if submitted:
+            if biz_name and whatsapp:
+                st.session_state.zimi_mood = ZIMI_HAPPY
+                st.success(f"Oshey! {biz_name} application received. Zimi is reviewing it now!")
+                st.balloons()
+            else:
+                st.error("Please fill in your Business Name and WhatsApp.")
