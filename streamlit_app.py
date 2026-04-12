@@ -8,42 +8,59 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. THE DATABASE & LINKS
+# 2. THE DATABASE & ASSETS
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs/export?format=csv"
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
-# 3. Enhanced Design & Styling
-st.markdown("""
+# ZIMI LINKS (The ones you just provided!)
+ZIMI_WAVING = "https://i.postimg.cc/9QdS9nRv/Gemini-Generated-Image-5wc5485wc5485wc5-removebg-preview.png"
+ZIMI_THINKING = "https://i.postimg.cc/ZKyXbRJ1/Gemini-Generated-Image-5wc5485wc5485wc5-2-removebg-preview.png"
+ZIMI_HAPPY = "https://i.postimg.cc/7h5dTP0K/Gemini-Generated-Image-5wc5485wc5485wc5-1-removebg-preview.png"
+
+# 3. Session State for Zimi's Mood
+if 'zimi_mood' not in st.session_state:
+    st.session_state.zimi_mood = ZIMI_WAVING
+
+# 4. Enhanced Design & Styling
+st.markdown(f"""
     <style>
-    .stApp { background-color: #fcfcfc; }
-    .product-card {
+    .stApp {{ background-color: #fcfcfc; }}
+    .product-card {{
         background-color: white; padding: 15px; border-radius: 15px;
         border: 1px solid #eee; margin-bottom: 20px; text-align: center;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-    .price-text { color: #1DA1F2; font-weight: 800; font-size: 1.3em; margin: 10px 0; }
-    .verified-badge { color: #1DA1F2; font-size: 0.8em; font-weight: bold; border: 1px solid #1DA1F2; padding: 2px 5px; border-radius: 5px; }
-    .hero-box { background: #1DA1F2; color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 25px; }
-    .trust-bar { background-color: #e1f5fe; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 20px; border: 1px dashed #01579b; }
-    .delivery-tag { font-size: 0.8em; color: #2e7d32; font-weight: bold; }
+    }}
+    .price-text {{ color: #1DA1F2; font-weight: 800; font-size: 1.3em; margin: 10px 0; }}
+    .hero-box {{ background: #1DA1F2; color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 25px; }}
+    
+    /* FLOATING ZIMI STYLE */
+    .zimi-float {{
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        width: 120px;
+        filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.2));
+        transition: all 0.5s ease-in-out;
+    }}
     </style>
+    
+    <div class="zimi-float">
+        <img src="{st.session_state.zimi_mood}" width="100%">
+    </div>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR ---
-st.sidebar.image("https://i.postimg.cc/mD3WvH5n/Confirm-Am-Logo-Tick.png", use_container_width=True)
+# --- SIDEBAR NAVIGATION ---
+st.sidebar.image("https://i.postimg.cc/mD3WvH5n/Confirm-Am-Logo-Tick.png", width=100)
 st.sidebar.markdown("<h2 style='text-align:center;'>ConfirmAm</h2>", unsafe_allow_html=True)
 
-# Currency Switcher
-st.sidebar.markdown("---")
-st.sidebar.subheader("🌍 International Pricing")
-currency = st.sidebar.selectbox("Select Currency", ["NGN (₦)", "USD ($)"])
-exchange_rate = 1600 
-
-st.sidebar.markdown("---")
-st.sidebar.subheader("📦 Customer Service")
-st.sidebar.link_button("Track My Order", "https://wa.me/2347046481507?text=Hello%20ConfirmAm,%20I%20just%20paid%20and%20need%20to%20send%20my%20address", use_container_width=True, type="primary")
-
 menu = st.sidebar.radio("Navigation", ["🛍️ Shopping Mall", "🛡️ Safety & Escrow", "📥 Merchant Portal"])
+
+# Update Zimi's mood based on navigation
+if menu == "🛍️ Shopping Mall":
+    st.session_state.zimi_mood = ZIMI_WAVING
+elif menu == "🛡️ Safety & Escrow":
+    st.session_state.zimi_mood = ZIMI_THINKING
 
 # --- DATA LOADING ---
 @st.cache_data(ttl=10)
@@ -60,22 +77,7 @@ if menu == "🛍️ Shopping Mall":
         data = get_fresh_data(SHEET_URL)
         search_query = st.text_input("🔍 Search products...", "")
         
-        if 'status' in data.columns:
-            data = data[data['status'].str.lower() == 'active']
-        
-        # Featured Section
-        if 'featured' in data.columns and not search_query:
-            featured_items = data[data['featured'].str.lower() == 'yes']
-            if not featured_items.empty:
-                st.subheader("✨ Featured Arrivals")
-                f_cols = st.columns(len(featured_items))
-                for idx, (f_idx, f_row) in enumerate(featured_items.iterrows()):
-                    with f_cols[idx]:
-                        st.image(f_row.get('image_url', 'https://via.placeholder.com/150'), use_container_width=True)
-                        st.caption(f"**{f_row.get('name')}**")
-
-        st.markdown("---")
-        
+        # Display Grid
         cols = st.columns(2)
         for i, row in data.iterrows():
             with cols[i % 2]:
@@ -83,37 +85,27 @@ if menu == "🛍️ Shopping Mall":
                 st.image(row.get('image_url', 'https://via.placeholder.com/300'), use_container_width=True)
                 
                 naira_price = row.get('price', 0)
-                display_price = f"${(naira_price / exchange_rate):,.2f}" if currency == "USD ($)" else f"₦{naira_price:,}"
+                st.markdown(f"<b>{row.get('name', 'Item')}</b><p class='price-text'>₦{naira_price:,}</p>", unsafe_allow_html=True)
                 
-                st.markdown(f"""
-                    <b style="font-size:1.1em; display:block; height:40px;">{row.get('name', 'Item')}</b>
-                    <p class="price-text">{display_price}</p>
-                """, unsafe_allow_html=True)
-                
-                # UPDATED BUTTON TEXT
                 st.link_button("Buy with ConfirmAm Escrow", FLUTTERWAVE_LINK, use_container_width=True)
                 
                 if st.button(f"Generate Receipt: {row.get('name')[:10]}", key=f"btn_{i}"):
-                    st.code(f"CONFIRMAM RECEIPT\nITEM: {row.get('name')}\nPRICE: {display_price}\nSTATUS: AWAITING PAYMENT", language="markdown")
+                    st.session_state.zimi_mood = ZIMI_HAPPY # ZIMI CELEBRATES!
+                    st.balloons()
+                    st.code(f"CONFIRMAM RECEIPT\nITEM: {row.get('name')}\nPRICE: ₦{naira_price:,}\nSTATUS: AWAITING PAYMENT", language="markdown")
                 
                 st.markdown('</div>', unsafe_allow_html=True)
     except Exception as e:
-        st.error("Connecting...")
+        st.error("Connecting to mall...")
 
 # --- SAFETY & ESCROW ---
 elif menu == "🛡️ Safety & Escrow":
-    st.markdown("<h1 style='text-align:center;'>Safe Payment Guide</h1>", unsafe_allow_html=True)
-    
-    st.info("""
-    💡 **Paying via Bank Transfer?**
-    When you choose 'Bank Transfer' on our payment page, Flutterwave will generate a unique account number for your order. 
-    **Don't worry if you see 'ConfirmAm' or your name on the account destination—this is a secure virtual account created just for your transaction.**
-    """)
+    st.markdown("<h1 style='text-align:center;'>Zimi's Safety Guide</h1>", unsafe_allow_html=True)
+    st.info("💡 **Zimi says:** 'Don't worry about bank transfers! Flutterwave creates a unique account just for you under our name. It's 100% secure.'")
     
     st.markdown("""
-    ### 🛡️ The ConfirmAm Guarantee:
-    1. **You Pay:** Funds are held by us.
-    2. **We Verify:** We ensure the vendor is ready to ship.
-    3. **You Receive:** You get your item and confirm it's what you ordered.
-    4. **We Release:** Only then is the seller paid.
+    ### 🛡️ Why use ConfirmAm Escrow?
+    * **Anti-Scam:** We hold the money, not the seller.
+    * **Quality Check:** You verify the item before we release funds.
+    * **No Stress:** If the item never comes, you get your money back.
     """)
