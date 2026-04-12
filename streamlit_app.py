@@ -11,7 +11,8 @@ MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=
 
 # --- Business Logic ---
 USD_RATE = 1500  # ₦ to $1 exchange rate
-COMMISSION_RATE = 0.10  # Your 10% cut
+VENDOR_FEE = 0.05  # 5% taken from Vendor payout
+BUYER_MARKUP = 0.05 # 5% added to the Buyer price
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
 # 3. Styling
@@ -25,26 +26,24 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR (Currency & Nav) ---
+# --- SIDEBAR ---
 st.sidebar.image("https://i.postimg.cc/mD3WvH5n/Confirm-Am-Logo-Tick.png", use_container_width=True)
 st.sidebar.title("ConfirmAm")
 currency = st.sidebar.radio("💰 Select Currency", ["Naira (₦)", "Dollar ($)"])
 st.sidebar.markdown("---")
 menu = st.sidebar.radio("Navigate", ["🛍️ Shopping Mall", "🛡️ Safety & Escrow", "🏢 Merchant Directory", "📥 Apply to Sell"])
 
-# --- 🛍️ SHOPPING MALL (With Search & Commission) ---
+# --- 🛍️ SHOPPING MALL ---
 if menu == "🛍️ Shopping Mall":
     st.markdown('<h1 style="text-align:center;">ConfirmAm Mall</h1>', unsafe_allow_html=True)
     st.markdown('<div class="trust-bar">🛡️ <b>Escrow Protected:</b> Money held safely until delivery.</div>', unsafe_allow_html=True)
     
-    # SEARCH BAR
     search_query = st.text_input("🔍 Search products...", "").lower()
 
     try:
         data = pd.read_csv(PRODUCTS_URL)
         data.columns = [c.strip().lower() for c in data.columns]
         
-        # Filter Logic
         items = data[(data['status'].str.lower() == 'active') & 
                      (data['name'].str.lower().str.contains(search_query))]
 
@@ -54,23 +53,30 @@ if menu == "🛍️ Shopping Mall":
             cols = st.columns(2)
             for i, row in items.iterrows():
                 with cols[i % 2]:
-                    # Currency Logic
-                    raw_p = row.get('price', 0)
-                    price_display = f"₦{raw_p:,}" if currency == "Naira (₦)" else f"${(raw_p/USD_RATE):,.2f}"
+                    # --- PRICING LOGIC ---
+                    base_p = row.get('price', 0) # Price entered in Google Sheet
+                    buyer_p = base_p * (1 + BUYER_MARKUP) # 5% added for buyer
+                    vendor_p = base_p * (1 - VENDOR_FEE) # 5% removed from vendor
+                    total_comm = buyer_p - vendor_p # Your total 10% spread
+                    
+                    # Currency Display
+                    price_display = f"₦{buyer_p:,.0f}" if currency == "Naira (₦)" else f"${(buyer_p/USD_RATE):,.2f}"
                     
                     st.markdown(f'<div class="product-card">', unsafe_allow_html=True)
                     st.image(row.get('image_url'), use_container_width=True)
                     
-                    # Verified Check
                     is_v = str(row.get('verified')).upper() == "TRUE"
                     badge = '<span class="verified-badge">☑️ VERIFIED</span>' if is_v else ""
                     
                     st.markdown(f"<h5>{row.get('name')} {badge}</h5>", unsafe_allow_html=True)
                     st.markdown(f"<p class='price-text'>{price_display}</p>", unsafe_allow_html=True)
                     
-                    # Secret Commission (Admin View)
-                    with st.expander("Admin: Profit Info"):
-                        st.write(f"Your 10% Commission: ₦{(raw_p * COMMISSION_RATE):,}")
+                    # ADMIN VIEW (Hidden Profit Info)
+                    with st.expander("💼 Admin: Commission Breakdown"):
+                        st.info("This section is only for the marketplace owner to track profits.")
+                        st.write(f"**Buyer Pays:** ₦{buyer_p:,.0f} (Base + 5% markup)")
+                        st.write(f"**Vendor Receives:** ₦{vendor_p:,.0f} (Base - 5% fee)")
+                        st.success(f"**Total Profit:** ₦{total_comm:,.0f}")
                     
                     st.link_button("Buy with Escrow", FLUTTERWAVE_LINK, use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
@@ -103,6 +109,15 @@ elif menu == "🏢 Merchant Directory":
 # --- 📥 APPLY TO SELL ---
 elif menu == "📥 Apply to Sell":
     st.header("Join the Marketplace")
+    st.write("List your products and reach thousands of buyers securely.")
+    
+    with st.expander("✨ Why sell on ConfirmAm?"):
+        st.write("""
+        - **Secure Payments:** No more 'pay on delivery' risks. We hold the money.
+        - **Verified Status:** Build trust with our blue checkmark.
+        - **Fair Pricing:** We only take a 5% commission from your final sale price to cover escrow and platform security.
+        """)
+        
     with st.form("Apply"):
         name = st.text_input("Business Name")
         cat = st.selectbox("Category", ["Fashion", "Tech", "Beauty", "Other"])
