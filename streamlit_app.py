@@ -8,11 +8,16 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. THE DATABASE LINKS (The "No-Fail" Mobile Links)
-SHEET_ID = "1VubDpOo8wOWTOeyhgu-9oMlagyTvRZUqDc6wkXIpfTY"
-# gid=0 is your first tab, gid=1626214553 is your merchants tab
-PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=0"
-MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=1626214553"
+# 2. THE DATABASE LINKS (Using both IDs you provided)
+# First link: Product Mall
+SHEET_ID_PRODUCTS = "1VubDpOo8wOWTOeyhgu-9oMlagyTvRZUqDc6wkXIpfTY"
+# Second link: Merchant Catalog
+SHEET_ID_MERCHANTS = "1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs"
+
+# Direct CSV Export Links
+PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID_PRODUCTS}/export?format=csv&gid=0"
+MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID_MERCHANTS}/export?format=csv&gid=0"
+
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
 # --- ZIMI IMAGE LINKS ---
@@ -64,9 +69,8 @@ if menu == "🛍️ Shopping Mall":
                     st.markdown('<div class="product-card">', unsafe_allow_html=True)
                     st.image(row.get('image_url', ''), use_container_width=True)
                     
-                    raw_price = float(row.get('price', 0))
-                    final_amt = raw_price * 1.05 
-                    display_price = final_amt if symbol == "₦" else (final_amt / rate)
+                    price = float(row.get('price', 0)) * 1.05 
+                    display_price = price if symbol == "₦" else (price / rate)
                     
                     st.markdown(f"""
                         <span class="vendor-tag">👤 {row.get('seller', 'Verified Seller')}</span>
@@ -76,7 +80,7 @@ if menu == "🛍️ Shopping Mall":
                     st.link_button("Instant Buy", FLUTTERWAVE_LINK, use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
     except:
-        st.error("Zimi is refreshing the stock... please hit 'R' to refresh!")
+        st.error("Database connection busy. Please refresh the app!")
 
 # --- 2. MERCHANT CATALOG ---
 elif menu == "🏢 Merchant Catalog":
@@ -103,16 +107,16 @@ elif menu == "🏢 Merchant Catalog":
             for _, m in m_data.iterrows():
                 st.markdown(f"✅ **{m.iloc[0]}**")
     except:
-        st.warning("Connecting to Merchant Directory... refresh in 5 seconds.")
+        st.warning("Refreshing Merchant Directory...")
 
 # --- 3. SAFETY ---
 elif menu == "🛡️ How Escrow Works":
     st.image(ZIMI_SIDEBAR, width=150)
     st.header("The Zimi Guarantee")
     st.markdown("""
-    1. **Secured Funds:** We hold your payment in a neutral vault.
-    2. **Verified Quality:** Vendors only get paid once you confirm delivery.
-    3. **No Scams:** Every merchant is hand-verified.
+    1. **Secured Funds:** Payment stays in a neutral vault.
+    2. **Verified Quality:** No payment to vendor until you're happy.
+    3. **Trust:** Every merchant is hand-verified.
     """)
     st.link_button("Contact Support", "https://wa.me/2347046481507")
 
@@ -128,5 +132,5 @@ elif menu == "📥 Apply to Sell":
         
         if st.form_submit_button("Submit Application"):
             msg = f"App:%20{b_name}%0ACat:%20{b_cat}%0AEmail:%20{b_email}%0ASocial:%20{b_social}"
-            st.success("Application received! Click below to finish on WhatsApp.")
-            st.link_button("Finalize Verification", f"https://wa.me/2347046481507?text={msg}")
+            st.success("Application received!")
+            st.link_button("Finalize on WhatsApp", f"https://wa.me/2347046481507?text={msg}")
