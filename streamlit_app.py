@@ -8,9 +8,11 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. ASSETS & DATABASE
+# 2. ASSETS
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs/export?format=csv"
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
+# ADD YOUR EMAIL HERE TO RECEIVE NOTIFICATIONS
+MY_EMAIL = "FIGOCHE87@GMAIL.COM"
 
 # ZIMI LINKS
 ZIMI_WAVING = "https://i.postimg.cc/9QdS9nRv/Gemini-Generated-Image-5wc5485wc5485wc5-removebg-preview.png"
@@ -20,10 +22,8 @@ ZIMI_HAPPY = "https://i.postimg.cc/7h5dTP0K/Gemini-Generated-Image-5wc5485wc5485
 # 3. Session State
 if 'zimi_mood' not in st.session_state:
     st.session_state.zimi_mood = ZIMI_WAVING
-if 'submitted' not in st.session_state:
-    st.session_state.submitted = False
 
-# 4. Global Styling
+# 4. Global Styling (LOCKING IN THE LOOK)
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #fcfcfc; }}
@@ -37,12 +37,8 @@ st.markdown(f"""
     
     .zimi-float {{
         position: fixed;
-        bottom: -20px; 
-        right: -50px; 
-        z-index: 9999;
-        width: 390px;
-        filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.2));
-        pointer-events: none;
+        bottom: -20px; right: -50px; z-index: 9999;
+        width: 390px; pointer-events: none;
         transition: all 0.4s ease-in-out;
     }}
 
@@ -52,10 +48,7 @@ st.markdown(f"""
         display: flex; align-items: center; margin-top: 20px;
     }}
     </style>
-    
-    <div class="zimi-float">
-        <img src="{st.session_state.zimi_mood}" width="100%">
-    </div>
+    <div class="zimi-float"><img src="{st.session_state.zimi_mood}" width="100%"></div>
     """, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
@@ -73,38 +66,28 @@ menu = st.sidebar.radio("Navigation", ["🛍️ Shopping Mall", "🛡️ Safety 
 
 if menu == "🛍️ Shopping Mall":
     st.session_state.zimi_mood = ZIMI_WAVING
-    st.session_state.submitted = False # Reset form state if they leave the page
     st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Verified Items • Secure Escrow • 10% Protection Fee Included</p></div>', unsafe_allow_html=True)
-    
     try:
         data = pd.read_csv(SHEET_URL)
         data.columns = [c.strip().lower() for c in data.columns]
-        search_query = st.text_input("🔍 Search products...", "").lower()
-        filtered_data = data[data['name'].str.contains(search_query, na=False)] if search_query else data
-
         cols = st.columns(5) 
-        for i, row in filtered_data.iterrows():
+        for i, row in data.iterrows():
             with cols[i % 5]:
                 st.markdown('<div class="product-card">', unsafe_allow_html=True)
                 st.image(row.get('image_url', 'https://via.placeholder.com/150'), use_container_width=True)
                 base_price = row.get('price', 0)
-                total_naira = base_price + (base_price * 0.10)
+                total = base_price * 1.10
                 if currency == "USD ($)":
-                    display_price = f"${(total_naira / exchange_rate):,.2f}"
+                    display_price = f"${(total / exchange_rate):,.2f}"
                 else:
-                    display_price = f"₦{total_naira:,}"
+                    display_price = f"₦{total:,.0f}"
                 st.markdown(f"<p style='font-size:0.8em; margin:0;'>{row.get('name')[:20]}</p><p class='price-text'>{display_price}</p>", unsafe_allow_html=True)
-                st.link_button("Buy", FLUTTERWAVE_LINK, key=f"btn_{i}", use_container_width=True)
-                if st.button(f"Receipt", key=f"r_{i}"):
-                    st.session_state.zimi_mood = ZIMI_HAPPY
-                    st.balloons()
-                    st.rerun()
+                st.link_button("Buy", FLUTTERWAVE_LINK, use_container_width=True)
                 st.markdown('</div>', unsafe_allow_html=True)
-    except: st.error("Updating Mall...")
+    except: st.error("Refreshing Mall...")
 
 elif menu == "🛡️ Safety & Escrow":
     st.session_state.zimi_mood = ZIMI_THINKING
-    st.session_state.submitted = False
     st.markdown("<h1 style='text-align:center;'>🛡️ ConfirmAm Safety Vault</h1>", unsafe_allow_html=True)
     st.markdown("""
     <div class="safety-card">
@@ -117,31 +100,28 @@ elif menu == "🛡️ Safety & Escrow":
         </div>
     </div>
     """, unsafe_allow_html=True)
-    st.info("💡 **Zimi's Tip:** 'If it's not what you ordered, don't worry. We handle the refund process for you!'")
 
 elif menu == "📥 Merchant Portal":
     st.session_state.zimi_mood = ZIMI_WAVING
     st.markdown("<h1 style='text-align:center;'>Partner with ConfirmAm</h1>", unsafe_allow_html=True)
-    
-    if not st.session_state.submitted:
-        with st.form("merchant_registration_full", clear_on_submit=True):
-            st.subheader("Business Registration")
-            biz_name = st.text_input("Business Name")
-            contact_person = st.text_input("Contact Person Name")
-            whatsapp = st.text_input("WhatsApp Number")
-            category = st.selectbox("What do you sell?", ["Fashion", "Electronics", "Groceries", "Other"])
-            submitted = st.form_submit_button("Submit Application")
-            
-            if submitted:
-                if biz_name and whatsapp:
-                    st.session_state.submitted = True
-                    st.session_state.zimi_mood = ZIMI_HAPPY
-                    st.rerun()
-                else:
-                    st.error("Wait! Zimi needs your Business Name and WhatsApp.")
-    else:
-        st.success("Oshey! Application received. Zimi is reviewing it now!")
-        st.balloons()
-        if st.button("Submit Another"):
-            st.session_state.submitted = False
-            st.rerun()
+    with st.form("merchant_contact"):
+        st.subheader("Business Registration")
+        biz_name = st.text_input("Business Name")
+        contact = st.text_input("Contact Person Name")
+        whatsapp = st.text_input("WhatsApp Number")
+        category = st.selectbox("What do you sell?", ["Fashion", "Electronics", "Groceries", "Other"])
+        submitted = st.form_submit_button("Submit Application")
+        
+        if submitted:
+            if biz_name and whatsapp:
+                # This prepares the data to be sent to your email
+                subject = f"New Merchant Application: {biz_name}"
+                body = f"Biz: {biz_name}%0AContact: {contact}%0AWA: {whatsapp}%0ACat: {category}"
+                form_url = f"https://formsubmit.co/{MY_EMAIL}?subject={subject}&body={body}"
+                
+                st.session_state.zimi_mood = ZIMI_HAPPY
+                st.success(f"Oshey! One last step to protect your data.")
+                st.link_button("✅ Click to Finalize Application", form_url, use_container_width=True)
+                st.balloons()
+            else:
+                st.error("Wait! Zimi needs your Business Name and WhatsApp.")
