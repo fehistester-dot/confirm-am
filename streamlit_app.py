@@ -114,14 +114,12 @@ elif menu == "🏢 Merchant Catalog":
     with col_m2: st.title("Verified Partners")
 
     try:
-        # Improved data loading for the merchant tab
         m_data = pd.read_csv(MERCHANTS_URL)
         m_data.columns = [c.strip().lower() for c in m_data.columns]
         
         if m_data.empty:
             st.info("Zimi is currently vetting new merchants. Check back soon!")
         else:
-            # Grouping by category
             if 'category' in m_data.columns:
                 for cat in m_data['category'].unique():
                     with st.expander(f"📁 {str(cat).upper()} VENDORS", expanded=True):
@@ -131,7 +129,6 @@ elif menu == "🏢 Merchant Catalog":
                             v_social = m.get('socials', 'No social link')
                             st.markdown(f"✅ **{v_name}** | Socials: `{v_social}`")
             else:
-                # Fallback if 'category' column is missing or named differently
                 st.write("### All Verified Vendors")
                 for _, m in m_data.iterrows():
                     st.markdown(f"✅ **{m.iloc[0]}**")
@@ -158,10 +155,11 @@ elif menu == "📥 Apply to Sell":
     with st.form("Merchant Form"):
         b_name = st.text_input("Business Name")
         b_cat = st.selectbox("Niche", ["Fashion", "Electronics", "Beauty", "Services", "Other"])
+        b_email = st.text_input("Email Address")
         b_social = st.text_input("Instagram/TikTok Handle")
         b_phone = st.text_input("WhatsApp Number")
         
         if st.form_submit_button("Submit Application"):
-            msg = f"App:%20{b_name}%0ACat:%20{b_cat}%0ASocial:%20{b_social}"
+            msg = f"App:%20{b_name}%0ACat:%20{b_cat}%0AEmail:%20{b_email}%0ASocial:%20{b_social}"
             st.success("Application received! Zimi is waiting for you on WhatsApp.")
             st.link_button("Finalize Verification", f"https://wa.me/2347046481507?text={msg}")
