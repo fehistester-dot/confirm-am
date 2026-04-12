@@ -12,7 +12,7 @@ st.set_page_config(
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs/export?format=csv"
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
-# ZIMI LINKS (Confirmed Transparent PNGs)
+# ZIMI LINKS
 ZIMI_WAVING = "https://i.postimg.cc/9QdS9nRv/Gemini-Generated-Image-5wc5485wc5485wc5-removebg-preview.png"
 ZIMI_THINKING = "https://i.postimg.cc/ZKyXbRJ1/Gemini-Generated-Image-5wc5485wc5485wc5-2-removebg-preview.png"
 ZIMI_HAPPY = "https://i.postimg.cc/7h5dTP0K/Gemini-Generated-Image-5wc5485wc5485wc5-1-removebg-preview.png"
@@ -34,7 +34,6 @@ st.markdown(f"""
     .hero-box {{ background: #1DA1F2; color: white; padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 25px; }}
     .featured-box {{ background: #FFF9E6; border: 2px solid #FFD700; padding: 15px; border-radius: 15px; margin-bottom: 20px; }}
     
-    /* FLOATING ZIMI */
     .zimi-float {{
         position: fixed;
         bottom: 20px;
@@ -75,12 +74,12 @@ if menu == "🛍️ Shopping Mall":
         data = pd.read_csv(SHEET_URL)
         data.columns = [c.strip().lower() for c in data.columns]
 
-        search_query = st.text_input("🔍 Search for clothing, gadgets, or accessories...", "").lower()
+        search_query = st.text_input("🔍 Search for products...", "").lower()
         
         if not search_query:
             st.markdown('<div class="featured-box"><b>🌟 Zimi\'s Pick:</b> Highly rated vendor.</div>', unsafe_allow_html=True)
             feat = data.iloc[0]
-            st.info(f"Featured: {feat.get('name', 'New Arrival')}")
+            st.info(f"Top Choice Today: {feat.get('name', 'New Arrival')}")
 
         filtered_data = data[data['name'].str.contains(search_query, na=False)] if search_query else data
 
@@ -90,7 +89,7 @@ if menu == "🛍️ Shopping Mall":
                 st.markdown('<div class="product-card">', unsafe_allow_html=True)
                 st.image(row.get('image_url', 'https://via.placeholder.com/300'), use_container_width=True)
                 
-                # PRICE CALCULATIONS
+                # COMMISSION LOGIC
                 base_price = row.get('price', 0)
                 commission = base_price * 0.10
                 total_naira = base_price + commission
@@ -108,40 +107,36 @@ if menu == "🛍️ Shopping Mall":
                 if st.button(f"Receipt: {row.get('name')[:12]}", key=f"r_{i}"):
                     st.session_state.zimi_mood = ZIMI_HAPPY
                     st.balloons()
-                    st.code(f"""
-----------------------------------
-    CONFIRMAM DIGITAL RECEIPT
-----------------------------------
-ITEM: {row.get('name')}
-SELLER PRICE: {base_price:,}
-ESCROW FEE (10%): {comm_text}
-TOTAL TO PAY: {display_price}
-----------------------------------
-STATUS: SECURE ESCROW ACTIVE
-----------------------------------
-""", language="markdown")
+                    st.code(f"CONFIRMAM RECEIPT\nITEM: {row.get('name')}\nSELLER PRICE: {base_price:,}\nESCROW FEE (10%): {comm_text}\nTOTAL: {display_price}")
                 st.markdown('</div>', unsafe_allow_html=True)
     except: st.error("Refreshing Mall...")
 
 elif menu == "🛡️ Safety & Escrow":
     st.session_state.zimi_mood = ZIMI_THINKING
-    st.markdown("<h1 style='text-align:center;'>Your Safety, Our Priority</h1>", unsafe_allow_html=True)
-    st.info("Zimi is currently monitoring the Escrow Vault. All funds are safely held until you confirm delivery.")
+    st.markdown("<h1 style='text-align:center;'>🛡️ Zimi's Safety Vault</h1>", unsafe_allow_html=True)
+    
+    st.info("💡 **Zimi's Tip:** 'Don't worry about bank transfers! Flutterwave creates a unique account just for you under our name. Your money stays in our vault until you say the item is clean!'")
+    
+    st.markdown("""
+    ### 🛡️ Why use ConfirmAm Escrow?
+    * **Anti-Scam:** We hold the money, not the seller. No pay, no loss!
+    * **Quality Check:** You verify the item before we release your hard-earned funds.
+    * **No Stress:** If the item never arrives or it's "wash," you get your money back instantly.
+    * **Verified Sellers:** We only partner with merchants who pass Zimi's style and trust test.
+    """)
 
 elif menu == "📥 Merchant Portal":
     st.session_state.zimi_mood = ZIMI_WAVING
-    st.markdown("<h1 style='text-align:center;'>Become a Verified Partner</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align:center;'>Partner with ConfirmAm</h1>", unsafe_allow_html=True)
     
     with st.form("merchant_reg"):
-        st.subheader("Vendor Application Form")
+        st.subheader("Business Registration")
         b_name = st.text_input("Business Name")
         owner = st.text_input("Full Name")
-        phone = st.text_input("WhatsApp Number (For verification)")
-        cat = st.selectbox("Category", ["Fashion", "Tech", "Lifestyle"])
+        phone = st.text_input("WhatsApp Number")
         submit = st.form_submit_button("Send to Zimi for Review")
-        
         if submit:
             if b_name and phone:
                 st.session_state.zimi_mood = ZIMI_HAPPY
-                st.success(f"Oshey! {b_name} registered. We will contact you on WhatsApp soon.")
+                st.success(f"Oshey! {b_name} application received. Zimi is reviewing it!")
                 st.balloons()
