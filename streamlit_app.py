@@ -8,8 +8,8 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. THE DATABASE LINKS
-SHEET_ID = SHEET_ID = "1VubDpOo8wOWTOeyhgu-9oMlagyTvRZUqDc6wkXIpfTY"
+# 2. THE DATABASE LINKS - UPDATED WITH YOUR NEW ID
+SHEET_ID = "1VubDpOo8wOWTOeyhgu-9oMlagyTvRZUqDc6wkXIpfTY"
 PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sheet1"
 MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=merchants"
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
@@ -115,25 +115,31 @@ elif menu == "🏢 Merchant Catalog":
 
     try:
         m_data = pd.read_csv(MERCHANTS_URL)
-        m_data.columns = [c.strip().lower() for c in m_data.columns]
+        # Clean column names: remove extra spaces and make lowercase
+        m_data.columns = m_data.columns.str.strip().str.lower()
         
         if m_data.empty:
             st.info("Zimi is currently vetting new merchants. Check back soon!")
         else:
-            if 'category' in m_data.columns:
-                for cat in m_data['category'].unique():
+            # Find the category column (flexible for 'category' or 'niche')
+            cat_col = 'category' if 'category' in m_data.columns else 'niche'
+            
+            if cat_col in m_data.columns:
+                for cat in m_data[cat_col].unique():
+                    if pd.isna(cat): continue # Skip empty categories
                     with st.expander(f"📁 {str(cat).upper()} VENDORS", expanded=True):
-                        cat_vendors = m_data[m_data['category'] == cat]
+                        cat_vendors = m_data[m_data[cat_col] == cat]
                         for _, m in cat_vendors.iterrows():
-                            v_name = m.get('name', 'Unknown Business')
-                            v_social = m.get('socials', 'No social link')
+                            # Flexible mapping for name and social handles
+                            v_name = m.get('name', m.get('business name', 'Unknown Business'))
+                            v_social = m.get('socials', m.get('instagram/tiktok handle', 'No social link'))
                             st.markdown(f"✅ **{v_name}** | Socials: `{v_social}`")
             else:
                 st.write("### All Verified Vendors")
                 for _, m in m_data.iterrows():
                     st.markdown(f"✅ **{m.iloc[0]}**")
     except Exception as e:
-        st.error(f"Zimi couldn't load the directory. Please check that your Google Sheet has a tab named 'merchants'.")
+        st.error(f"Zimi couldn't load the directory. Please check that your Google Sheet has a tab named 'merchants' and public access is on.")
 
 # --- 3. SAFETY & ESCROW ---
 elif menu == "🛡️ How Escrow Works":
@@ -160,7 +166,6 @@ elif menu == "📥 Apply to Sell":
         b_phone = st.text_input("WhatsApp Number")
         
         if st.form_submit_button("Submit Application"):
-            # Format message for WhatsApp including the new email field
             msg = f"App:%20{b_name}%0ACat:%20{b_cat}%0AEmail:%20{b_email}%0ASocial:%20{b_social}"
             st.success("Application received! Zimi is waiting for you on WhatsApp.")
             st.link_button("Finalize Verification", f"https://wa.me/2347046481507?text={msg}")
