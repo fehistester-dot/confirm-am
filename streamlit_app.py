@@ -24,15 +24,15 @@ st.markdown("""
     <style>
     .stApp { background-color: #fcfcfc; }
     .product-card {
-        background-color: white; padding: 10px; border-radius: 12px;
+        background-color: white; padding: 12px; border-radius: 15px;
         border: 1px solid #eee; margin-bottom: 20px; text-align: center;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.3s;
     }
-    .product-card:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
-    .price-text { color: #1DA1F2; font-weight: 800; font-size: 1.1em; margin: 5px 0; }
-    .commission-text { color: #28a745; font-size: 0.75em; font-weight: bold; }
-    .hero-box { background: #1DA1F2; color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
+    .product-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+    .price-text { color: #1DA1F2; font-weight: 800; font-size: 1.2em; margin: 8px 0; }
+    .hero-box { background: linear-gradient(135deg, #1DA1F2 0%, #01579b 100%); color: white; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 25px; }
     .stSidebar [data-testid="stImage"] img { border-radius: 15px; }
+    .vendor-tag { background: #e1f5fe; color: #01579b; font-size: 0.7em; padding: 2px 8px; border-radius: 20px; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -41,108 +41,117 @@ st.sidebar.image(ZIMI_SIDEBAR, use_container_width=True)
 st.sidebar.markdown("<h2 style='text-align:center;'>ConfirmAm</h2>", unsafe_allow_html=True)
 
 # Currency Toggle
-currency = st.sidebar.radio("Currency / Local Exchange", ["🇳🇬 NGN (Naira)", "🇺🇸 USD (Dollar)"])
-rate = 1500 # Current average exchange rate - you can update this manually
+currency = st.sidebar.selectbox("Display Currency", ["🇳🇬 NGN (Naira)", "🇺🇸 USD (Dollar)"])
+rate = 1500 # Adjust this manually when the rate changes
 symbol = "₦" if "NGN" in currency else "$"
 
 st.sidebar.markdown("---")
-menu = st.sidebar.radio("Navigate", ["🛍️ Shopping Mall", "🛡️ Safety & Escrow", "🏢 Merchant Catalog", "📥 Apply to Sell"])
+menu = st.sidebar.radio("Navigate", ["🛍️ Shopping Mall", "🏢 Merchant Catalog", "🛡️ How Escrow Works", "📥 Apply to Sell"])
+
+st.sidebar.markdown("---")
+st.sidebar.caption("© 2026 ConfirmAm Nigeria. All transactions are Escrow-Protected.")
 
 # --- 1. SHOPPING MALL ---
 if menu == "🛍️ Shopping Mall":
-    st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Verified Items • Secure Escrow • 5% Flat Commission</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Premium Selections • Verified Vendors • Secure Payments</p></div>', unsafe_allow_html=True)
     
-    # Search Bar
-    search_query = st.text_input("🔍 Search for products or vendors...", "").lower()
-
-    col_a, col_b = st.columns([1, 5])
-    with col_a:
-        st.image(ZIMI_MALL, width=80)
-    with col_b:
-        st.info(f"👋 **Zimi here!** Browse our verified items. Note: A tiny **5% escrow fee** is added to secure your deal.")
+    # Search & Filter Row
+    s_col1, s_col2 = st.columns([3, 1])
+    with s_col1:
+        search_query = st.text_input("🔍 Search for products, brands, or categories...", "").lower()
+    with s_col2:
+        category_filter = st.selectbox("Quick Filter", ["All Items", "Fashion", "Electronics", "Beauty", "Home"])
 
     try:
         data = pd.read_csv(PRODUCTS_URL)
         data.columns = [c.strip().lower() for c in data.columns]
         
-        # Filter Active & Search
+        # Filtering Logic
         if 'status' in data.columns:
             data = data[data['status'].str.lower() == 'active']
         
         if search_query:
             data = data[data['name'].str.lower().str.contains(search_query) | 
                         data['seller'].str.lower().str.contains(search_query)]
+        
+        if category_filter != "All Items":
+            data = data[data['category'].str.lower() == category_filter.lower()]
 
         if data.empty:
-            st.warning("No products found. Try a different search!")
+            st.warning("No matches found. Zimi suggests checking your spelling!")
         else:
-            # 5 COLUMN GRID
+            # PROFESSIONAL 5 COLUMN GRID
             cols = st.columns(5)
             for i, row in data.iterrows():
                 with cols[i % 5]:
                     st.markdown('<div class="product-card">', unsafe_allow_html=True)
+                    
+                    # Product Image
                     st.image(row.get('image_url', ''), use_container_width=True)
                     
-                    # Math for Commission & Currency
+                    # INVISIBLE FEE CALCULATION
+                    # Admin knows this is Price + 5%, Buyer just sees the total
                     raw_price = float(row.get('price', 0))
-                    total_price = raw_price * 1.05 # Add 5% commission
+                    final_amt = raw_price * 1.05 
                     
-                    display_price = total_price if symbol == "₦" else (total_price / rate)
+                    display_price = final_amt if symbol == "₦" else (final_amt / rate)
                     
                     st.markdown(f"""
-                        <b style="font-size:0.9em; display:block; height:35px; overflow:hidden;">{row.get('name', 'Item')}</b>
+                        <span class="vendor-tag">👤 {row.get('seller', 'Verified Seller')}</span>
+                        <b style="font-size:0.9em; display:block; margin-top:10px; height:40px; overflow:hidden;">{row.get('name', 'Product')}</b>
                         <p class="price-text">{symbol}{display_price:,.0f}</p>
-                        <p class="commission-text">+5% Protection Fee Incl.</p>
                     """, unsafe_allow_html=True)
-                    st.link_button("Buy Securely", FLUTTERWAVE_LINK, use_container_width=True)
+                    
+                    st.link_button("Instant Buy", FLUTTERWAVE_LINK, use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
+                    
     except Exception as e:
-        st.error("Warehouse connection lost. Please refresh.")
+        st.error("Zimi is reconnecting to the database... please refresh.")
 
-# --- 2. SAFETY & ESCROW ---
-elif menu == "🛡️ Safety & Escrow":
-    st.header("The ConfirmAm 5% Guarantee")
-    st.markdown("""
-    To keep your transactions 100% safe, we charge a small **5% commission** from both parties. 
-    This covers:
-    * **Verification:** Ensuring the vendor is real.
-    * **Escrow:** Holding your funds in a secure vault.
-    * **Dispute Resolution:** Zimi steps in if the item isn't what you ordered.
-    """)
-    st.image("https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800", use_container_width=True)
-
-# --- 3. MERCHANT CATALOG ---
+# --- 2. MERCHANT CATALOG ---
 elif menu == "🏢 Merchant Catalog":
     col_m1, col_m2 = st.columns([1, 4])
     with col_m1: st.image(ZIMI_MERCHANT, width=120)
-    with col_m2: st.title("Verified Merchant Directory")
+    with col_m2: st.title("Verified Partners")
 
     try:
         m_data = pd.read_csv(MERCHANTS_URL)
         m_data.columns = [c.strip().lower() for c in m_data.columns]
         
         for cat in m_data['category'].unique():
-            st.subheader(f"🏷️ {cat.upper()}")
-            cat_vendors = m_data[m_data['category'] == cat]
-            for _, m in cat_vendors.iterrows():
-                st.info(f"**{m.get('name')}** - {m.get('socials')} (Verified ☑️)")
+            with st.expander(f"📁 {cat.upper()} VENDORS", expanded=True):
+                cat_vendors = m_data[m_data['category'] == cat]
+                for _, m in cat_vendors.iterrows():
+                    st.markdown(f"✅ **{m.get('name')}** | Socials: `{m.get('socials')}`")
     except:
-        st.error("Error loading Merchant list.")
+        st.error("Could not load directory.")
+
+# --- 3. SAFETY & ESCROW ---
+elif menu == "🛡️ How Escrow Works":
+    st.image(ZIMI_SIDEBAR, width=150)
+    st.header("The Zimi Guarantee")
+    st.markdown("""
+    ### Why Shop with ConfirmAm?
+    1. **Secured Funds:** We hold your payment in a neutral vault.
+    2. **Verified Quality:** Vendors only get paid once the item is delivered.
+    3. **No Scams:** We vet every merchant so you don't have to.
+    
+    *Need help with an order?*
+    """)
+    st.link_button("Contact Support", "https://wa.me/2347046481507")
 
 # --- 4. APPLY TO SELL ---
 elif menu == "📥 Apply to Sell":
-    st.title("Join ConfirmAm as a Vendor")
-    st.write("Sell to thousands of verified buyers with Zimi's protection.")
+    st.title("Partner with ConfirmAm")
+    st.write("Join Nigeria's most trusted escrow marketplace.")
     
     with st.form("Merchant Form"):
-        biz_name = st.text_input("Business Name")
-        biz_type = st.selectbox("Category", ["Fashion", "Electronics", "Beauty", "Home", "Other"])
-        ig_handle = st.text_input("Social Media Handle (IG/TikTok)")
-        phone = st.text_input("WhatsApp Number")
-        
-        st.write("⚠️ *Note: ConfirmAm takes a 5% commission on all successful sales to provide escrow services.*")
+        b_name = st.text_input("Business Name")
+        b_cat = st.selectbox("Niche", ["Fashion", "Electronics", "Beauty", "Services", "Other"])
+        b_social = st.text_input("Instagram/TikTok Handle")
+        b_phone = st.text_input("WhatsApp Number")
         
         if st.form_submit_button("Submit Application"):
-            msg = f"New%20Merchant:%20{biz_name}%0ACategory:%20{biz_type}%0ASocials:%20{ig_handle}"
-            st.success("Zimi is reviewing your request...")
-            st.link_button("Chat with Zimi to Finish", f"https://wa.me/2347046481507?text={msg}")
+            msg = f"App:%20{b_name}%0ACat:%20{b_cat}%0ASocial:%20{b_social}"
+            st.success("Application received! Zimi is waiting for you on WhatsApp.")
+            st.link_button("Finalize Verification", f"https://wa.me/2347046481507?text={msg}")
