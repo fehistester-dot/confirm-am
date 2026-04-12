@@ -8,12 +8,12 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. ASSETS & DATABASE
+# 2. ASSETS & PERMANENT LINKS
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs/export?format=csv"
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 MY_WHATSAPP = "2347046481507" 
 
-# ZIMI MOODS
+# ZIMI MOOD LINKS
 ZIMI_WAVING = "https://i.postimg.cc/9QdS9nRv/Gemini-Generated-Image-5wc5485wc5485wc5-removebg-preview.png"
 ZIMI_THINKING = "https://i.postimg.cc/ZKyXbRJ1/Gemini-Generated-Image-5wc5485wc5485wc5-2-removebg-preview.png"
 ZIMI_HAPPY = "https://i.postimg.cc/7h5dTP0K/Gemini-Generated-Image-5wc5485wc5485wc5-1-removebg-preview.png"
@@ -22,12 +22,12 @@ ZIMI_HAPPY = "https://i.postimg.cc/7h5dTP0K/Gemini-Generated-Image-5wc5485wc5485
 if 'zimi_mood' not in st.session_state:
     st.session_state.zimi_mood = ZIMI_WAVING
 
-# 4. Global Styling (THE CONFIRM-AM DESIGN SYSTEM)
+# 4. Global Styling (THE FULL DESIGN SYSTEM)
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #fcfcfc; }}
     .product-card {{
-        background-color: white; padding: 10px; border-radius: 12px;
+        background-color: white; padding: 12px; border-radius: 12px;
         border: 1px solid #eee; margin-bottom: 15px; text-align: center;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }}
@@ -45,6 +45,7 @@ st.markdown(f"""
         background: linear-gradient(135deg, #1DA1F2 0%, #0d8bd9 100%);
         color: white; padding: 30px; border-radius: 20px;
         display: flex; align-items: center; margin-top: 20px;
+        box-shadow: 0 10px 20px rgba(29, 161, 242, 0.2);
     }}
     </style>
     <div class="zimi-float"><img src="{st.session_state.zimi_mood}" width="100%"></div>
@@ -67,14 +68,11 @@ if menu == "🛍️ Shopping Mall":
     st.session_state.zimi_mood = ZIMI_WAVING
     st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Verified Items • Secure Escrow • 10% Protection Fee Included</p></div>', unsafe_allow_html=True)
     
-    # RESTORED SEARCH BAR
     search_query = st.text_input("🔍 Search for products...", "").lower()
     
     try:
         data = pd.read_csv(SHEET_URL)
         data.columns = [c.strip().lower() for c in data.columns]
-        
-        # Filter data based on search
         filtered_data = data[data['name'].str.contains(search_query, na=False)] if search_query else data
         
         cols = st.columns(5) 
@@ -85,7 +83,6 @@ if menu == "🛍️ Shopping Mall":
                 
                 base_price = row.get('price', 0)
                 total = base_price * 1.10
-                
                 price_display = f"${(total/exchange_rate):,.2f}" if currency == "USD ($)" else f"₦{total:,.0f}"
                 
                 st.markdown(f"<p style='font-size:0.9em; margin:0;'><b>{row.get('name')[:20]}</b></p><p class='price-text'>{price_display}</p>", unsafe_allow_html=True)
@@ -101,37 +98,37 @@ elif menu == "🛡️ Safety & Escrow":
     st.session_state.zimi_mood = ZIMI_THINKING
     st.markdown("<h1 style='text-align:center;'>🛡️ ConfirmAm Safety Vault</h1>", unsafe_allow_html=True)
     
+    # RESTORED: THE FULL SAFETY VAULT
     st.markdown("""
     <div class="safety-card">
         <div style="flex: 1;">
             <h2 style="color: white; margin-bottom: 10px;">Your Funds are 100% Protected</h2>
-            <p style="font-size: 1.1em; opacity: 0.9;">We hold your payment in our secure escrow vault. The seller only gets paid after you confirm you've received exactly what you ordered.</p>
+            <p style="font-size: 1.1em; opacity: 0.9;">We hold your payment in our secure escrow vault. The seller only gets paid after you confirm you've received exactly what you ordered. No scams, no stories.</p>
         </div>
         <div style="flex: 0.4; text-align: right;">
-            <img src="https://cdn-icons-png.flaticon.com/512/3596/3596091.png" width="140px">
+            <img src="https://cdn-icons-png.flaticon.com/512/3596/3596091.png" width="140px" style="filter: brightness(0) invert(1);">
         </div>
     </div>
     """, unsafe_allow_html=True)
-    st.info("💡 **Zimi's Tip:** 'If the item isn't right, don't confirm the receipt. We will handle your refund immediately!'")
+    st.info("💡 **Zimi's Tip:** 'If the item is faulty or not as described, don't worry! Just tell us and we'll handle the refund process for you.'")
 
 elif menu == "📥 Merchant Portal":
     st.session_state.zimi_mood = ZIMI_WAVING
     st.markdown("<h1 style='text-align:center;'>Partner with ConfirmAm</h1>", unsafe_allow_html=True)
     
     with st.form("merchant_wa_form"):
+        st.subheader("Business Registration")
         biz_name = st.text_input("Business Name")
         contact = st.text_input("Contact Person Name")
         wa_num = st.text_input("WhatsApp Number")
         cat = st.selectbox("Category", ["Fashion", "Electronics", "Groceries", "Other"])
         
-        submitted = st.form_submit_button("Generate Application Message")
-        
-        if submitted:
+        if st.form_submit_button("Generate Application Message"):
             if biz_name and wa_num:
-                msg = f"Hello ConfirmAm! I want to join as a Merchant.%0A%0A*Business:* {biz_name}%0A*Contact:* {contact}%0A*WhatsApp:* {wa_num}%0A*Category:* {cat}"
+                msg = f"Hello! I want to join ConfirmAm.%0A%0A*Biz:* {biz_name}%0A*Contact:* {contact}%0A*WA:* {wa_num}%0A*Cat:* {cat}"
                 st.session_state.zimi_mood = ZIMI_HAPPY
-                st.success("Success! Click below to send to Zimi via WhatsApp.")
-                st.link_button("🚀 Send Application to Zimi", f"https://wa.me/{MY_WHATSAPP}?text={msg}", use_container_width=True)
+                st.success("Oshey! Your application is ready.")
+                st.link_button("🚀 Send Application via WhatsApp", f"https://wa.me/{MY_WHATSAPP}?text={msg}", use_container_width=True)
                 st.balloons()
             else:
-                st.error("Please provide your Business Name and WhatsApp.")
+                st.error("Please fill Business Name and WhatsApp.")
