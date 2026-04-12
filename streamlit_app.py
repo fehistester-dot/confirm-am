@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import requests
+from io import StringIO
 
 # 1. Page Configuration
 st.set_page_config(
@@ -8,13 +10,10 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. THE DATABASE LINKS (Using both IDs you provided)
-# First link: Product Mall
+# 2. THE DATABASE LINKS
 SHEET_ID_PRODUCTS = "1VubDpOo8wOWTOeyhgu-9oMlagyTvRZUqDc6wkXIpfTY"
-# Second link: Merchant Catalog
 SHEET_ID_MERCHANTS = "1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs"
 
-# Direct CSV Export Links
 PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID_PRODUCTS}/export?format=csv&gid=0"
 MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID_MERCHANTS}/export?format=csv&gid=0"
 
@@ -41,6 +40,11 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# Helper function to bypass Google's "Stranger" block
+def load_data(url):
+    response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+    return pd.read_csv(StringIO(response.text))
+
 # --- SIDEBAR ---
 st.sidebar.image(ZIMI_SIDEBAR, use_container_width=True)
 st.sidebar.markdown("<h2 style='text-align:center;'>ConfirmAm</h2>", unsafe_allow_html=True)
@@ -57,7 +61,7 @@ if menu == "🛍️ Shopping Mall":
     st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Premium Selections • Verified Vendors • Secure Payments</p></div>', unsafe_allow_html=True)
     
     try:
-        data = pd.read_csv(PRODUCTS_URL)
+        data = load_data(PRODUCTS_URL)
         data.columns = [c.strip().lower() for c in data.columns]
         
         if data.empty:
@@ -79,8 +83,8 @@ if menu == "🛍️ Shopping Mall":
                     """, unsafe_allow_html=True)
                     st.link_button("Instant Buy", FLUTTERWAVE_LINK, use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-    except:
-        st.error("Database connection busy. Please refresh the app!")
+    except Exception as e:
+        st.error("Connecting to Zimi Database... please refresh.")
 
 # --- 2. MERCHANT CATALOG ---
 elif menu == "🏢 Merchant Catalog":
@@ -89,7 +93,7 @@ elif menu == "🏢 Merchant Catalog":
     with col_m2: st.title("Verified Partners")
 
     try:
-        m_data = pd.read_csv(MERCHANTS_URL)
+        m_data = load_data(MERCHANTS_URL)
         m_data.columns = m_data.columns.str.strip().str.lower()
         
         cat_col = 'category' if 'category' in m_data.columns else 'niche'
@@ -101,24 +105,16 @@ elif menu == "🏢 Merchant Catalog":
                     cat_vendors = m_data[m_data[cat_col] == cat]
                     for _, m in cat_vendors.iterrows():
                         v_name = m.iloc[0]
-                        v_social = m.get('socials', m.get('instagram/tiktok handle', 'No social link'))
-                        st.markdown(f"✅ **{v_name}** | Socials: `{v_social}`")
-        else:
-            for _, m in m_data.iterrows():
-                st.markdown(f"✅ **{m.iloc[0]}**")
+                        v_social = m.get('socials', m.get('instagram/tiktok handle', 'No link'))
+                        st.markdown(f"✅ **{v_name}** | `{v_social}`")
     except:
-        st.warning("Refreshing Merchant Directory...")
+        st.warning("Merchant directory is updating...")
 
 # --- 3. SAFETY ---
 elif menu == "🛡️ How Escrow Works":
     st.image(ZIMI_SIDEBAR, width=150)
     st.header("The Zimi Guarantee")
-    st.markdown("""
-    1. **Secured Funds:** Payment stays in a neutral vault.
-    2. **Verified Quality:** No payment to vendor until you're happy.
-    3. **Trust:** Every merchant is hand-verified.
-    """)
-    st.link_button("Contact Support", "https://wa.me/2347046481507")
+    st.write("We hold the funds. You get the goods. Only then do we pay the vendor.")
 
 # --- 4. APPLY TO SELL ---
 elif menu == "📥 Apply to Sell":
@@ -131,6 +127,6 @@ elif menu == "📥 Apply to Sell":
         b_phone = st.text_input("WhatsApp Number")
         
         if st.form_submit_button("Submit Application"):
-            msg = f"App:%20{b_name}%0ACat:%20{b_cat}%0AEmail:%20{b_email}%0ASocial:%20{b_social}"
+            msg = f"App:%20{b_name}%0ACat:%20{b_cat}%0AEmail:%20{b_email}"
             st.success("Application received!")
             st.link_button("Finalize on WhatsApp", f"https://wa.me/2347046481507?text={msg}")
