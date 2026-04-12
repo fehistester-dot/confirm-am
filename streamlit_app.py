@@ -120,6 +120,7 @@ elif menu == "📥 Apply to Sell":
     with st.form("Merchant Form"):
         biz_name = st.text_input("Business Name")
         biz_cat = st.selectbox("Category", ["Fashion", "Tech", "Beauty", "Home", "Other"])
+        email = st.text_input("Email Address")
         socials = st.text_input("Social Media Handle (IG/TikTok)")
         wa_num = st.text_input("WhatsApp Number")
         location = st.text_input("Business Location (City/State)")
@@ -131,6 +132,7 @@ elif menu == "📥 Apply to Sell":
                 msg = (f"New Merchant Application:%0A"
                        f"- Business: {biz_name}%0A"
                        f"- Category: {biz_cat}%0A"
+                       f"- Email: {email}%0A"
                        f"- Socials: {socials}%0A"
                        f"- Location: {location}%0A"
                        f"- WhatsApp: {wa_num}")
