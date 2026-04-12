@@ -160,6 +160,7 @@ elif menu == "📥 Apply to Sell":
         b_phone = st.text_input("WhatsApp Number")
         
         if st.form_submit_button("Submit Application"):
+            # Format message for WhatsApp including the new email field
             msg = f"App:%20{b_name}%0ACat:%20{b_cat}%0AEmail:%20{b_email}%0ASocial:%20{b_social}"
             st.success("Application received! Zimi is waiting for you on WhatsApp.")
             st.link_button("Finalize Verification", f"https://wa.me/2347046481507?text={msg}")
