@@ -21,34 +21,35 @@ ZIMI_HAPPY = "https://i.postimg.cc/7h5dTP0K/Gemini-Generated-Image-5wc5485wc5485
 if 'zimi_mood' not in st.session_state:
     st.session_state.zimi_mood = ZIMI_WAVING
 
-# 4. Global Styling (THE ONLY CHANGE IS HERE)
+# 4. Global Styling
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #fcfcfc; }}
+    
+    /* SMALLER PRODUCT CARDS */
     .product-card {{
-        background-color: white; padding: 15px; border-radius: 15px;
-        border: 1px solid #eee; margin-bottom: 20px; text-align: center;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        background-color: white; 
+        padding: 10px; 
+        border-radius: 12px;
+        border: 1px solid #eee; 
+        margin-bottom: 15px; 
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }}
-    .price-text {{ color: #1DA1F2; font-weight: 800; font-size: 1.3em; margin: 10px 0; }}
+    .price-text {{ color: #1DA1F2; font-weight: 800; font-size: 1.1em; margin: 5px 0; }}
     .hero-box {{ background: #1DA1F2; color: white; padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 25px; }}
     .featured-box {{ background: #FFF9E6; border: 2px solid #FFD700; padding: 15px; border-radius: 15px; margin-bottom: 20px; }}
     
+    /* THE LARGE SIDE ZIMI */
     .zimi-float {{
         position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 1000;
-        
-        /* ------------------------------------------------------------------
-           THE SIZE UPGRADE:
-           Changed 'width: 130px' to 'width: 390px' (3x size).
-           This makes Zimi three times larger, commanding the space.
-           ------------------------------------------------------------------ */
+        bottom: -20px; /* Anchored slightly lower for a better look */
+        right: -50px; /* Pushed slightly off-side so she doesn't block the center */
+        z-index: 9999;
         width: 390px;
-        
         filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.2));
-        transition: all 0.5s ease-in-out; /* Smooth transition when she changes pose */
+        pointer-events: none; /* Allows user to click buttons BEHIND Zimi */
+        transition: all 0.5s ease-in-out;
     }}
     </style>
     
@@ -57,7 +58,7 @@ st.markdown(f"""
     </div>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR (Complete & Unchanged) ---
+# --- SIDEBAR ---
 st.sidebar.image("https://i.postimg.cc/mD3WvH5n/Confirm-Am-Logo-Tick.png", use_container_width=True)
 st.sidebar.markdown("<h2 style='text-align:center;'>ConfirmAm</h2>", unsafe_allow_html=True)
 
@@ -72,7 +73,7 @@ st.sidebar.link_button("Track My Order", "https://wa.me/2347046481507", use_cont
 
 menu = st.sidebar.radio("Navigation", ["🛍️ Shopping Mall", "🛡️ Safety & Escrow", "📥 Merchant Portal"])
 
-# --- CONTENT LOGIC (Complete & Unchanged) ---
+# --- PAGE LOGIC ---
 
 if menu == "🛍️ Shopping Mall":
     st.session_state.zimi_mood = ZIMI_WAVING
@@ -82,18 +83,19 @@ if menu == "🛍️ Shopping Mall":
         data = pd.read_csv(SHEET_URL)
         data.columns = [c.strip().lower() for c in data.columns]
 
-        search_query = st.text_input("🔍 Search for clothing, gadgets, or accessories...", "").lower()
+        search_query = st.text_input("🔍 Search products...", "").lower()
         
         if not search_query:
             st.markdown('<div class="featured-box"><b>🌟 Zimi\'s Pick:</b> Highly rated vendor.</div>', unsafe_allow_html=True)
             feat = data.iloc[0]
-            st.info(f"Featured: {feat.get('name', 'Premium Choice')}")
+            st.info(f"Top Choice Today: {feat.get('name', 'Premium Choice')}")
 
         filtered_data = data[data['name'].str.contains(search_query, na=False)] if search_query else data
 
-        cols = st.columns(2)
+        # 3-COLUMN GRID FOR SMALLER ITEMS
+        cols = st.columns(3) 
         for i, row in filtered_data.iterrows():
-            with cols[i % 2]:
+            with cols[i % 3]:
                 st.markdown('<div class="product-card">', unsafe_allow_html=True)
                 st.image(row.get('image_url', 'https://via.placeholder.com/300'), use_container_width=True)
                 
@@ -109,10 +111,10 @@ if menu == "🛍️ Shopping Mall":
                     display_price = f"₦{total_naira:,}"
                     comm_text = f"₦{commission:,}"
                 
-                st.markdown(f"<b>{row.get('name')}</b><p class='price-text'>{display_price}</p>", unsafe_allow_html=True)
-                st.link_button("Buy with ConfirmAm Escrow", FLUTTERWAVE_LINK, use_container_width=True)
+                st.markdown(f"<small>{row.get('name')}</small><p class='price-text'>{display_price}</p>", unsafe_allow_html=True)
+                st.link_button("Buy Now", FLUTTERWAVE_LINK, use_container_width=True)
                 
-                if st.button(f"Receipt: {row.get('name')[:10]}", key=f"r_{i}"):
+                if st.button(f"Receipt", key=f"r_{i}"):
                     st.session_state.zimi_mood = ZIMI_HAPPY
                     st.balloons()
                     st.code(f"CONFIRMAM RECEIPT\nITEM: {row.get('name')}\nSELLER PRICE: {base_price:,}\nESCROW FEE (10%): {comm_text}\nTOTAL: {display_price}")
@@ -121,31 +123,24 @@ if menu == "🛍️ Shopping Mall":
 
 elif menu == "🛡️ Safety & Escrow":
     st.session_state.zimi_mood = ZIMI_THINKING
-    st.markdown("<h1 style='text-align:center;'>Your Safety, Our Priority</h1>", unsafe_allow_html=True)
-    
-    st.info("💡 **Zimi's Tip:** 'Don't worry about bank transfers! Flutterwave creates a unique account just for you under our name. Your money stays in our vault until you say the item is clean!'")
-    
+    st.markdown("<h1 style='text-align:center;'>🛡️ Zimi's Safety Vault</h1>", unsafe_allow_html=True)
+    st.info("💡 **Zimi's Tip:** 'Your money stays in our vault until you say the item is clean!'")
     st.markdown("""
     ### 🛡️ Why use ConfirmAm Escrow?
     * **Anti-Scam:** We hold the money, not the seller.
-    * **Quality Check:** You verify the item before we release funds.
-    * **No Stress:** If the item never arrives or it's 'wash', you get your money back.
-    * **Verified Sellers:** Only trusted partners make it past Zimi's review.
+    * **Quality Check:** Verify before you release funds.
+    * **No Stress:** If it's "wash," you get your money back.
     """)
 
 elif menu == "📥 Merchant Portal":
     st.session_state.zimi_mood = ZIMI_WAVING
     st.markdown("<h1 style='text-align:center;'>Merchant Portal</h1>", unsafe_allow_html=True)
-    
     with st.form("merchant_reg"):
-        st.subheader("Apply to Partner")
+        st.subheader("Business Registration")
         b_name = st.text_input("Business Name")
-        owner = st.text_input("Contact Person")
         phone = st.text_input("WhatsApp Number")
         submit = st.form_submit_button("Submit for Review")
-        
-        if submit:
-            if b_name and phone:
-                st.session_state.zimi_mood = ZIMI_HAPPY
-                st.success(f"Oshey! {b_name} application received. Zimi will review it soon!")
-                st.balloons()
+        if submit and b_name:
+            st.session_state.zimi_mood = ZIMI_HAPPY
+            st.success(f"Oshey! {b_name} application received.")
+            st.balloons()
