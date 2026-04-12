@@ -66,11 +66,19 @@ menu = st.sidebar.radio("Navigation", ["🛍️ Shopping Mall", "🛡️ Safety 
 if menu == "🛍️ Shopping Mall":
     st.session_state.zimi_mood = ZIMI_WAVING
     st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Verified Items • Secure Escrow • 10% Protection Fee Included</p></div>', unsafe_allow_html=True)
+    
+    # RESTORED SEARCH BAR
+    search_query = st.text_input("🔍 Search for products...", "").lower()
+    
     try:
         data = pd.read_csv(SHEET_URL)
         data.columns = [c.strip().lower() for c in data.columns]
-        cols = st.columns(5) # 5-Column Sleek Grid
-        for i, row in data.iterrows():
+        
+        # Filter data based on search
+        filtered_data = data[data['name'].str.contains(search_query, na=False)] if search_query else data
+        
+        cols = st.columns(5) 
+        for i, row in filtered_data.iterrows():
             with cols[i % 5]:
                 st.markdown('<div class="product-card">', unsafe_allow_html=True)
                 st.image(row.get('image_url', 'https://via.placeholder.com/150'), use_container_width=True)
@@ -93,7 +101,6 @@ elif menu == "🛡️ Safety & Escrow":
     st.session_state.zimi_mood = ZIMI_THINKING
     st.markdown("<h1 style='text-align:center;'>🛡️ ConfirmAm Safety Vault</h1>", unsafe_allow_html=True)
     
-    # RESTORED SAFETY CONTENT
     st.markdown("""
     <div class="safety-card">
         <div style="flex: 1;">
@@ -105,7 +112,7 @@ elif menu == "🛡️ Safety & Escrow":
         </div>
     </div>
     """, unsafe_allow_html=True)
-    st.info("💡 **Zimi's Tip:** 'Shop with confidence. If the seller doesn't deliver, we refund you immediately!'")
+    st.info("💡 **Zimi's Tip:** 'If the item isn't right, don't confirm the receipt. We will handle your refund immediately!'")
 
 elif menu == "📥 Merchant Portal":
     st.session_state.zimi_mood = ZIMI_WAVING
@@ -123,4 +130,8 @@ elif menu == "📥 Merchant Portal":
             if biz_name and wa_num:
                 msg = f"Hello ConfirmAm! I want to join as a Merchant.%0A%0A*Business:* {biz_name}%0A*Contact:* {contact}%0A*WhatsApp:* {wa_num}%0A*Category:* {cat}"
                 st.session_state.zimi_mood = ZIMI_HAPPY
-                st.success("
+                st.success("Success! Click below to send to Zimi via WhatsApp.")
+                st.link_button("🚀 Send Application to Zimi", f"https://wa.me/{MY_WHATSAPP}?text={msg}", use_container_width=True)
+                st.balloons()
+            else:
+                st.error("Please provide your Business Name and WhatsApp.")
