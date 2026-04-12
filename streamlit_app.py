@@ -8,10 +8,13 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. THE DATABASE LINKS - UPDATED WITH YOUR NEW ID
+# 2. THE DATABASE LINKS - STABILIZED CONNECTION METHOD
 SHEET_ID = "1VubDpOo8wOWTOeyhgu-9oMlagyTvRZUqDc6wkXIpfTY"
-PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sheet1"
-MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=merchants"
+
+# Changed from 'gviz' to 'export' for a more stable handshake
+PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=0"
+MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=1626214553"
+
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
 # --- ZIMI IMAGE LINKS ---
@@ -42,7 +45,7 @@ st.sidebar.markdown("<h2 style='text-align:center;'>ConfirmAm</h2>", unsafe_allo
 
 # Currency Toggle
 currency = st.sidebar.selectbox("Display Currency", ["🇳🇬 NGN (Naira)", "🇺🇸 USD (Dollar)"])
-rate = 1500 # Adjust this manually when the rate changes
+rate = 1500 
 symbol = "₦" if "NGN" in currency else "$"
 
 st.sidebar.markdown("---")
@@ -55,7 +58,6 @@ st.sidebar.caption("© 2026 ConfirmAm Nigeria. All transactions are Escrow-Prote
 if menu == "🛍️ Shopping Mall":
     st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Premium Selections • Verified Vendors • Secure Payments</p></div>', unsafe_allow_html=True)
     
-    # Search & Filter Row
     s_col1, s_col2 = st.columns([3, 1])
     with s_col1:
         search_query = st.text_input("🔍 Search for products, brands, or categories...", "").lower()
@@ -66,7 +68,6 @@ if menu == "🛍️ Shopping Mall":
         data = pd.read_csv(PRODUCTS_URL)
         data.columns = [c.strip().lower() for c in data.columns]
         
-        # Filtering Logic
         if 'status' in data.columns:
             data = data[data['status'].str.lower() == 'active']
         
@@ -80,19 +81,14 @@ if menu == "🛍️ Shopping Mall":
         if data.empty:
             st.warning("No matches found. Zimi suggests checking your spelling!")
         else:
-            # PROFESSIONAL 5 COLUMN GRID
             cols = st.columns(5)
-            for i, row in data.iterrows():
+            for i, (idx, row) in enumerate(data.iterrows()):
                 with cols[i % 5]:
                     st.markdown('<div class="product-card">', unsafe_allow_html=True)
-                    
-                    # Product Image
                     st.image(row.get('image_url', ''), use_container_width=True)
                     
-                    # INVISIBLE FEE CALCULATION
                     raw_price = float(row.get('price', 0))
                     final_amt = raw_price * 1.05 
-                    
                     display_price = final_amt if symbol == "₦" else (final_amt / rate)
                     
                     st.markdown(f"""
@@ -115,22 +111,19 @@ elif menu == "🏢 Merchant Catalog":
 
     try:
         m_data = pd.read_csv(MERCHANTS_URL)
-        # Clean column names: remove extra spaces and make lowercase
         m_data.columns = m_data.columns.str.strip().str.lower()
         
         if m_data.empty:
             st.info("Zimi is currently vetting new merchants. Check back soon!")
         else:
-            # Find the category column (flexible for 'category' or 'niche')
             cat_col = 'category' if 'category' in m_data.columns else 'niche'
             
             if cat_col in m_data.columns:
                 for cat in m_data[cat_col].unique():
-                    if pd.isna(cat): continue # Skip empty categories
+                    if pd.isna(cat): continue 
                     with st.expander(f"📁 {str(cat).upper()} VENDORS", expanded=True):
                         cat_vendors = m_data[m_data[cat_col] == cat]
                         for _, m in cat_vendors.iterrows():
-                            # Flexible mapping for name and social handles
                             v_name = m.get('name', m.get('business name', 'Unknown Business'))
                             v_social = m.get('socials', m.get('instagram/tiktok handle', 'No social link'))
                             st.markdown(f"✅ **{v_name}** | Socials: `{v_social}`")
@@ -139,7 +132,7 @@ elif menu == "🏢 Merchant Catalog":
                 for _, m in m_data.iterrows():
                     st.markdown(f"✅ **{m.iloc[0]}**")
     except Exception as e:
-        st.error(f"Zimi couldn't load the directory. Please check that your Google Sheet has a tab named 'merchants' and public access is on.")
+        st.error(f"Zimi couldn't load the directory. Please check that your Google Sheet has sharing set to 'Anyone with the link can view'.")
 
 # --- 3. SAFETY & ESCROW ---
 elif menu == "🛡️ How Escrow Works":
