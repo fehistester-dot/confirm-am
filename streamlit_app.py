@@ -23,15 +23,30 @@ st.markdown("""
     .price-text { color: #1DA1F2; font-weight: 800; font-size: 1.2em; }
     .verified-badge { color: #1DA1F2; font-size: 0.8em; font-weight: bold; border: 1px solid #1DA1F2; padding: 2px 5px; border-radius: 5px; }
     .trust-bar { background-color: #e1f5fe; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 20px; border: 1px dashed #01579b; }
+    .zimi-chat { background: #f0f2f6; padding: 10px; border-radius: 10px; border-left: 5px solid #1DA1F2; margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 st.sidebar.image("https://i.postimg.cc/mD3WvH5n/Confirm-Am-Logo-Tick.png", use_container_width=True)
 st.sidebar.title("ConfirmAm")
+
+# 🤖 FEATURE: ZIMI AI ASSISTANT
+with st.sidebar.expander("🤖 Chat with Zimi", expanded=False):
+    st.markdown('<div class="zimi-chat"><b>Zimi:</b> Hello! I can help you find luxury items or explain how our escrow works. What are you looking for today?</div>', unsafe_allow_html=True)
+    user_ask = st.text_input("Ask Zimi anything...")
+    if user_ask:
+        st.info(f"Zimi is thinking... (For full AI integration, connect your OpenAI/Gemini API key here)")
+
+st.sidebar.markdown("---")
 currency = st.sidebar.radio("💰 Select Currency", ["Naira (₦)", "Dollar ($)"])
 st.sidebar.markdown("---")
 menu = st.sidebar.radio("Navigate", ["🛍️ Shopping Mall", "🛡️ Safety & Escrow", "🏢 Merchant Directory", "📥 Apply to Sell"])
+
+# 📦 FEATURE: QUICK TRACKER
+st.sidebar.markdown("---")
+if st.sidebar.button("📦 Track My Order"):
+    st.sidebar.link_button("Chat with Support", "https://wa.me/2347046481507?text=Hello,%20I%20want%20to%20track%20my%20ConfirmAm%20order.")
 
 # --- 🛍️ SHOPPING MALL ---
 if menu == "🛍️ Shopping Mall":
