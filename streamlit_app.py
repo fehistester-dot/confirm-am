@@ -1,144 +1,111 @@
 import streamlit as st
 import pandas as pd
 
-# 1. Page Configuration & Logo
-st.set_page_config(
-    page_title="ConfirmAm Marketplace", 
-    page_icon="🛡️",
-    layout="wide"
-)
+# 1. Setup & Logo
+st.set_page_config(page_title="ConfirmAm Marketplace", page_icon="🛡️", layout="wide")
 
-# 2. THE DATABASE LINKS (Points to your specific Sheet IDs and Tabs)
+# 2. CONFIGURATION
 SHEET_ID = "1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs"
-# URL for the Products (Sheet1)
 PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sheet1"
-# URL for the Merchants (Tab named 'merchants')
 MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=merchants"
 
+# --- Business Logic ---
+USD_RATE = 1500  # ₦ to $1 exchange rate
+COMMISSION_RATE = 0.10  # Your 10% cut
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
-# 3. Enhanced Design & Styling
+# 3. Styling
 st.markdown("""
     <style>
     .stApp { background-color: #fcfcfc; }
-    .product-card, .merchant-card {
-        background-color: white; padding: 15px; border-radius: 15px;
-        border: 1px solid #eee; margin-bottom: 20px; text-align: center;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-    .price-text { color: #1DA1F2; font-weight: 800; font-size: 1.3em; margin: 10px 0; }
+    .product-card { background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; text-align: center; margin-bottom: 20px; }
+    .price-text { color: #1DA1F2; font-weight: 800; font-size: 1.2em; }
     .verified-badge { color: #1DA1F2; font-size: 0.8em; font-weight: bold; border: 1px solid #1DA1F2; padding: 2px 5px; border-radius: 5px; }
-    .hero-box { background: #1DA1F2; color: white; padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 25px; }
     .trust-bar { background-color: #e1f5fe; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 20px; border: 1px dashed #01579b; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR ---
+# --- SIDEBAR (Currency & Nav) ---
 st.sidebar.image("https://i.postimg.cc/mD3WvH5n/Confirm-Am-Logo-Tick.png", use_container_width=True)
-st.sidebar.markdown("<h2 style='text-align:center;'>ConfirmAm</h2>", unsafe_allow_html=True)
-st.sidebar.markdown("---")
-
-st.sidebar.subheader("📦 Order Support")
-st.sidebar.link_button(
-    "Track My Order", 
-    "https://wa.me/2347046481507?text=Hello%20ConfirmAm,%20I%20just%20paid%20and%20need%20to%20send%20my%20address", 
-    use_container_width=True,
-    type="primary"
-)
-
+st.sidebar.title("ConfirmAm")
+currency = st.sidebar.radio("💰 Select Currency", ["Naira (₦)", "Dollar ($)"])
 st.sidebar.markdown("---")
 menu = st.sidebar.radio("Navigate", ["🛍️ Shopping Mall", "🛡️ Safety & Escrow", "🏢 Merchant Directory", "📥 Apply to Sell"])
 
-# --- 1. SHOPPING MALL ---
+# --- 🛍️ SHOPPING MALL (With Search & Commission) ---
 if menu == "🛍️ Shopping Mall":
-    st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Verified Items • Secure Escrow • Fast Delivery</p></div>', unsafe_allow_html=True)
+    st.markdown('<h1 style="text-align:center;">ConfirmAm Mall</h1>', unsafe_allow_html=True)
+    st.markdown('<div class="trust-bar">🛡️ <b>Escrow Protected:</b> Money held safely until delivery.</div>', unsafe_allow_html=True)
     
-    st.markdown('<div class="trust-bar"><p style="margin:0; color: #01579b; font-size: 0.85em;">🛡️ <b>Escrow Protected:</b> Money held safely until delivery. <br>🚚 <b>Real-time Shipping:</b> Rates calculated via WhatsApp after payment.</p></div>', unsafe_allow_html=True)
-    
+    # SEARCH BAR
+    search_query = st.text_input("🔍 Search products...", "").lower()
+
     try:
         data = pd.read_csv(PRODUCTS_URL)
         data.columns = [c.strip().lower() for c in data.columns]
         
-        # Only show active items
-        if 'status' in data.columns:
-            data = data[data['status'].str.lower() == 'active']
-        
-        if data.empty:
-            st.info("🏪 We are currently stocking the shelves. Check back in a moment!")
+        # Filter Logic
+        items = data[(data['status'].str.lower() == 'active') & 
+                     (data['name'].str.lower().str.contains(search_query))]
+
+        if items.empty:
+            st.info("No items found. Try a different search!")
         else:
             cols = st.columns(2)
-            for i, row in data.iterrows():
+            for i, row in items.iterrows():
                 with cols[i % 2]:
-                    st.markdown('<div class="product-card">', unsafe_allow_html=True)
-                    st.image(row.get('image_url', 'https://via.placeholder.com/300'), use_container_width=True)
+                    # Currency Logic
+                    raw_p = row.get('price', 0)
+                    price_display = f"₦{raw_p:,}" if currency == "Naira (₦)" else f"${(raw_p/USD_RATE):,.2f}"
                     
-                    is_v = str(row.get('verified', '')).strip().upper() == "TRUE"
+                    st.markdown(f'<div class="product-card">', unsafe_allow_html=True)
+                    st.image(row.get('image_url'), use_container_width=True)
+                    
+                    # Verified Check
+                    is_v = str(row.get('verified')).upper() == "TRUE"
                     badge = '<span class="verified-badge">☑️ VERIFIED</span>' if is_v else ""
                     
-                    st.markdown(f"""
-                        <p style="font-size:0.75em; color:#666; margin-bottom:5px;">{row.get('seller', 'ConfirmAm')} {badge}</p>
-                        <b style="font-size:1.1em; display:block; height:40px;">{row.get('name', 'Item')}</b>
-                        <p class="price-text">₦{row.get('price', 0):,}</p>
-                    """, unsafe_allow_html=True)
+                    st.markdown(f"<h5>{row.get('name')} {badge}</h5>", unsafe_allow_html=True)
+                    st.markdown(f"<p class='price-text'>{price_display}</p>", unsafe_allow_html=True)
+                    
+                    # Secret Commission (Admin View)
+                    with st.expander("Admin: Profit Info"):
+                        st.write(f"Your 10% Commission: ₦{(raw_p * COMMISSION_RATE):,}")
+                    
                     st.link_button("Buy with Escrow", FLUTTERWAVE_LINK, use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-    except Exception as e:
-        st.error("Connecting to Warehouse... Please refresh.")
+    except:
+        st.error("Connecting to Warehouse...")
 
-# --- 2. SAFETY & ESCROW ---
+# --- 🛡️ SAFETY & ESCROW ---
 elif menu == "🛡️ Safety & Escrow":
-    st.markdown("<h1 style='text-align:center;'>Your Protection is Our Priority</h1>", unsafe_allow_html=True)
+    st.header("How ConfirmAm Protects You")
     st.image("https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800", use_container_width=True)
-    
-    st.markdown("---")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.subheader("🛡️ Scam Prevention")
-        st.write("We verify every payment first. The vendor only ships once funds are secured in our middleman account.")
-    with col2:
-        st.subheader("🚚 Fair Delivery")
-        st.write("Rates are calculated via WhatsApp after payment to ensure you get the most accurate prices for your location.")
-    with col3:
-        st.subheader("🤝 Direct Support")
-        st.write("Our WhatsApp agents track your order from the moment you pay until the item is in your hands.")
-    st.info("💡 **Money is held by ConfirmAm. Sellers are only paid when you confirm you've received your item.**")
+    st.write("### Our 4-Step Protection Plan:")
+    st.write("1. **You Pay:** Funds are held securely by us.\n2. **Vendor Ships:** We authorize the seller to send the item.\n3. **Real-time Logistics:** Shipping calculated via WhatsApp for fair rates.\n4. **Release:** Vendor is paid ONLY after you confirm delivery.")
 
-# --- 3. MERCHANT DIRECTORY ---
+# --- 🏢 MERCHANT DIRECTORY ---
 elif menu == "🏢 Merchant Directory":
-    st.markdown("<h1 style='text-align:center;'>Our Verified Merchants</h1>", unsafe_allow_html=True)
+    st.header("Our Verified Partners")
     try:
         m_data = pd.read_csv(MERCHANTS_URL)
         m_data.columns = [c.strip().lower() for c in m_data.columns]
-        
-        if m_data.empty:
-            st.info("No merchants listed yet.")
-        else:
-            for _, m in m_data.iterrows():
-                is_mv = str(m.get('verified')).upper() == 'TRUE'
-                st.markdown(f"""
-                <div class="merchant-card">
-                    <h3 style="margin:0;">{m.get('name', 'Business')} {'☑️' if is_mv else ''}</h3>
-                    <p style="color:#666;">Category: {m.get('category', 'General')} | {m.get('socials', '')}</p>
-                    <p style="font-size:0.8em; color:#1DA1F2;">Verified Partner</p>
-                </div>
-                """, unsafe_allow_html=True)
+        for _, m in m_data.iterrows():
+            st.markdown(f"""
+            <div style="background:white; padding:15px; border-radius:10px; border:1px solid #eee; margin-bottom:10px;">
+                <h4>{m.get('name')} {'☑️' if str(m.get('verified')).upper() == 'TRUE' else ''}</h4>
+                <p style="color:#666;">{m.get('category')} | {m.get('socials')}</p>
+            </div>
+            """, unsafe_allow_html=True)
     except:
-        st.warning("Ensure you have a tab named 'merchants' in your Google Sheet with headers: name, category, socials, contact, verified.")
+        st.warning("No merchants listed yet.")
 
-# --- 4. APPLY TO SELL ---
+# --- 📥 APPLY TO SELL ---
 elif menu == "📥 Apply to Sell":
-    st.header("Become a Verified Vendor")
-    st.write("Join the most trusted marketplace. Fill this out and we will contact you via WhatsApp.")
-    
-    with st.form("Merchant Form"):
-        biz_name = st.text_input("Business Name")
-        biz_type = st.selectbox("Category", ["Fashion", "Electronics", "Beauty", "Other"])
-        ig_handle = st.text_input("Instagram/TikTok Handle")
-        contact = st.text_input("WhatsApp Number")
-        
-        submitted = st.form_submit_button("Submit Application")
-        if submitted:
-            msg = f"Application:%20{biz_name}%0ACategory:%20{biz_type}%0ASocials:%20{ig_handle}%0AContact:%20{contact}"
-            wa_url = f"https://wa.me/2347046481507?text={msg}"
-            st.success("Redirecting to WhatsApp to finalize verification...")
-            st.link_button("Complete Application on WhatsApp", wa_url, type="primary")
+    st.header("Join the Marketplace")
+    with st.form("Apply"):
+        name = st.text_input("Business Name")
+        cat = st.selectbox("Category", ["Fashion", "Tech", "Beauty", "Other"])
+        if st.form_submit_button("Submit Application"):
+            wa_url = f"https://wa.me/2347046481507?text=Merchant%20Application:%20{name}"
+            st.link_button("Complete on WhatsApp", wa_url)
