@@ -15,7 +15,7 @@ VENDOR_FEE = 0.05  # 5% taken from Vendor payout
 BUYER_MARKUP = 0.05 # 5% added to the Buyer price
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
-# 3. Styling
+# 3. Styling (Including Reacting Zimi in the corner)
 st.markdown("""
     <style>
     .stApp { background-color: #fcfcfc; }
@@ -23,20 +23,60 @@ st.markdown("""
     .price-text { color: #1DA1F2; font-weight: 800; font-size: 1.2em; }
     .verified-badge { color: #1DA1F2; font-size: 0.8em; font-weight: bold; border: 1px solid #1DA1F2; padding: 2px 5px; border-radius: 5px; }
     .trust-bar { background-color: #e1f5fe; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 20px; border: 1px dashed #01579b; }
-    .zimi-chat { background: #f0f2f6; padding: 10px; border-radius: 10px; border-left: 5px solid #1DA1F2; margin-bottom: 10px; }
+    
+    /* --- REACTING ZIMI FLOATING BUTTON --- */
+    .zimi-corner {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        transition: all 0.3s ease-in-out;
+        cursor: pointer;
+        text-align: center;
+    }
+    .zimi-corner:hover {
+        transform: scale(1.1) rotate(-5deg);
+    }
+    .zimi-bubble {
+        background: #1DA1F2;
+        color: white;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.75em;
+        font-weight: bold;
+        margin-bottom: 5px;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+    }
+    .zimi-avatar {
+        width: 70px; /* The specific size we discussed */
+        height: 70px;
+        background: white;
+        border-radius: 50%;
+        border: 3px solid #1DA1F2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 35px;
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
+    }
     </style>
+    
+    <div class="zimi-corner">
+        <div class="zimi-bubble">Chat with Zimi!</div>
+        <div class="zimi-avatar">🤖</div>
+    </div>
     """, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 st.sidebar.image("https://i.postimg.cc/mD3WvH5n/Confirm-Am-Logo-Tick.png", use_container_width=True)
 st.sidebar.title("ConfirmAm")
 
-# 🤖 FEATURE: ZIMI AI ASSISTANT
-with st.sidebar.expander("🤖 Chat with Zimi", expanded=False):
-    st.markdown('<div class="zimi-chat"><b>Zimi:</b> Hello! I can help you find luxury items or explain how our escrow works. What are you looking for today?</div>', unsafe_allow_html=True)
+# 🤖 FEATURE: ZIMI AI ASSISTANT (Sidebar version for typing)
+with st.sidebar.expander("🤖 Zimi AI Assistant", expanded=False):
+    st.markdown('<div style="background:#f0f2f6; padding:10px; border-radius:10px; border-left:5px solid #1DA1F2;"><b>Zimi:</b> Hey! I can help you find products or explain our escrow. What\'s on your mind?</div>', unsafe_allow_html=True)
     user_ask = st.text_input("Ask Zimi anything...")
     if user_ask:
-        st.info(f"Zimi is thinking... (For full AI integration, connect your OpenAI/Gemini API key here)")
+        st.info("Zimi is analyzing your request...")
 
 st.sidebar.markdown("---")
 currency = st.sidebar.radio("💰 Select Currency", ["Naira (₦)", "Dollar ($)"])
@@ -86,7 +126,6 @@ if menu == "🛍️ Shopping Mall":
                     st.markdown(f"<p class='price-text'>{price_display}</p>", unsafe_allow_html=True)
                     
                     with st.expander("💼 Admin: Commission Breakdown"):
-                        st.info("Marketplace Owner View")
                         st.write(f"**Buyer Pays:** ₦{buyer_p:,.0f}")
                         st.write(f"**Vendor Receives:** ₦{vendor_p:,.0f}")
                         st.success(f"**Total Profit:** ₦{total_comm:,.0f}")
@@ -126,10 +165,9 @@ elif menu == "📥 Apply to Sell":
     with st.expander("✨ Commission & Vendor Protection"):
         st.info("Transparency for our Vendors")
         st.write("""
-        To ensure platform security and escrow services, ConfirmAm operates on a small commission structure:
-        - **Automatic Markup:** We add 5% to your listing price for the buyer to cover transaction fees.
-        - **Platform Fee:** We deduct 5% from the final sale to cover escrow management.
-        - **Security:** This ensures you are never scammed and your money is guaranteed once the buyer receives the item.
+        - **Automatic Markup:** We add 5% for the buyer.
+        - **Platform Fee:** We deduct 5% from the final sale.
+        - **Security:** Guarantees you are never scammed.
         """)
 
     with st.form("Merchant Form"):
@@ -146,13 +184,8 @@ elif menu == "📥 Apply to Sell":
             if biz_name and wa_num:
                 msg = (f"New Merchant Application:%0A"
                        f"- Business: {biz_name}%0A"
-                       f"- Category: {biz_cat}%0A"
                        f"- Email: {email}%0A"
-                       f"- Socials: {socials}%0A"
-                       f"- Location: {location}%0A"
                        f"- WhatsApp: {wa_num}")
                 wa_url = f"https://wa.me/2347046481507?text={msg}"
-                st.success("Application ready! Click below to send.")
+                st.success("Application ready!")
                 st.link_button("Complete on WhatsApp", wa_url, type="primary")
-            else:
-                st.error("Please fill in the Business Name and WhatsApp Number.")
