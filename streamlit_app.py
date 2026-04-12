@@ -15,17 +15,21 @@ VENDOR_FEE = 0.05  # 5% taken from Vendor payout
 BUYER_MARKUP = 0.05 # 5% added to the Buyer price
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
-# 3. Styling (Including Reacting Zimi in the corner)
-st.markdown("""
+# --- ZIMI IMAGE ASSET ---
+# Using the thumbs-up version for the "Reacting" feel
+ZIMI_IMG = "https://i.postimg.cc/q7x2gH07/image-0.png"
+
+# 3. Styling (Including the REAL Zimi reacting in the corner)
+st.markdown(f"""
     <style>
-    .stApp { background-color: #fcfcfc; }
-    .product-card { background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; text-align: center; margin-bottom: 20px; }
-    .price-text { color: #1DA1F2; font-weight: 800; font-size: 1.2em; }
-    .verified-badge { color: #1DA1F2; font-size: 0.8em; font-weight: bold; border: 1px solid #1DA1F2; padding: 2px 5px; border-radius: 5px; }
-    .trust-bar { background-color: #e1f5fe; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 20px; border: 1px dashed #01579b; }
+    .stApp {{ background-color: #fcfcfc; }}
+    .product-card {{ background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; text-align: center; margin-bottom: 20px; }}
+    .price-text {{ color: #1DA1F2; font-weight: 800; font-size: 1.2em; }}
+    .verified-badge {{ color: #1DA1F2; font-size: 0.8em; font-weight: bold; border: 1px solid #1DA1F2; padding: 2px 5px; border-radius: 5px; }}
+    .trust-bar {{ background-color: #e1f5fe; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 20px; border: 1px dashed #01579b; }}
     
-    /* --- REACTING ZIMI FLOATING BUTTON --- */
-    .zimi-corner {
+    /* --- REAL ZIMI FLOATING BUTTON --- */
+    .zimi-corner {{
         position: fixed;
         bottom: 20px;
         right: 20px;
@@ -33,11 +37,11 @@ st.markdown("""
         transition: all 0.3s ease-in-out;
         cursor: pointer;
         text-align: center;
-    }
-    .zimi-corner:hover {
+    }}
+    .zimi-corner:hover {{
         transform: scale(1.1) rotate(-5deg);
-    }
-    .zimi-bubble {
+    }}
+    .zimi-bubble {{
         background: #1DA1F2;
         color: white;
         padding: 5px 12px;
@@ -46,37 +50,49 @@ st.markdown("""
         font-weight: bold;
         margin-bottom: 5px;
         box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
-    }
-    .zimi-avatar {
-        width: 70px; /* The specific size we discussed */
-        height: 70px;
+    }}
+    .zimi-avatar {{
+        width: 80px; 
+        height: 80px;
         background: white;
         border-radius: 50%;
         border: 3px solid #1DA1F2;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 35px;
         box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
-    }
+        overflow: hidden;
+    }}
+    .zimi-avatar img {{
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }}
     </style>
     
     <div class="zimi-corner">
-        <div class="zimi-bubble">Chat with Zimi!</div>
-        <div class="zimi-avatar">🤖</div>
+        <div class="zimi-bubble">Zimi is here!</div>
+        <div class="zimi-avatar">
+            <img src="{ZIMI_IMG}">
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
-st.sidebar.image("https://i.postimg.cc/mD3WvH5n/Confirm-Am-Logo-Tick.png", use_container_width=True)
+st.sidebar.image(ZIMI_IMG, use_container_width=True)
 st.sidebar.title("ConfirmAm")
+st.sidebar.markdown("<p style='text-align:center;'><b>I am Zimi, your escrow guide!</b></p>", unsafe_allow_html=True)
 
-# 🤖 FEATURE: ZIMI AI ASSISTANT (Sidebar version for typing)
-with st.sidebar.expander("🤖 Zimi AI Assistant", expanded=False):
-    st.markdown('<div style="background:#f0f2f6; padding:10px; border-radius:10px; border-left:5px solid #1DA1F2;"><b>Zimi:</b> Hey! I can help you find products or explain our escrow. What\'s on your mind?</div>', unsafe_allow_html=True)
-    user_ask = st.text_input("Ask Zimi anything...")
+# 🤖 FEATURE: ZIMI AI ASSISTANT (Sidebar version)
+with st.sidebar.expander("🛡️ Talk to Zimi", expanded=False):
+    st.markdown(f'''
+        <div style="background:#f0f2f6; padding:10px; border-radius:10px; border-left:5px solid #1DA1F2;">
+            <b>Zimi:</b> Hey! I'm watching over your transactions. Ask me anything about our verified vendors or how to pay!
+        </div>
+    ''', unsafe_allow_html=True)
+    user_ask = st.text_input("Message Zimi...")
     if user_ask:
-        st.info("Zimi is analyzing your request...")
+        st.info("Zimi is typing...")
 
 st.sidebar.markdown("---")
 currency = st.sidebar.radio("💰 Select Currency", ["Naira (₦)", "Dollar ($)"])
@@ -86,7 +102,7 @@ menu = st.sidebar.radio("Navigate", ["🛍️ Shopping Mall", "🛡️ Safety & 
 # 📦 FEATURE: QUICK TRACKER
 st.sidebar.markdown("---")
 if st.sidebar.button("📦 Track My Order"):
-    st.sidebar.link_button("Chat with Support", "https://wa.me/2347046481507?text=Hello,%20I%20want%20to%20track%20my%20ConfirmAm%20order.")
+    st.sidebar.link_button("Chat with Support", "https://wa.me/2347046481507?text=Hello%20Zimi,%20I%20want%20to%20track%20my%20order.")
 
 # --- 🛍️ SHOPPING MALL ---
 if menu == "🛍️ Shopping Mall":
