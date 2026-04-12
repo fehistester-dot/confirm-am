@@ -17,11 +17,11 @@ ZIMI_WAVING = "https://i.postimg.cc/9QdS9nRv/Gemini-Generated-Image-5wc5485wc548
 ZIMI_THINKING = "https://i.postimg.cc/ZKyXbRJ1/Gemini-Generated-Image-5wc5485wc5485wc5-2-removebg-preview.png"
 ZIMI_HAPPY = "https://i.postimg.cc/7h5dTP0K/Gemini-Generated-Image-5wc5485wc5485wc5-1-removebg-preview.png"
 
-# 3. Session State
+# 3. Session State (FOR REACTIVE MOODS)
 if 'zimi_mood' not in st.session_state:
     st.session_state.zimi_mood = ZIMI_WAVING
 
-# 4. Global Styling
+# 4. Global Styling (Big Zimi & 5-Column Grid)
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #fcfcfc; }}
@@ -42,7 +42,7 @@ st.markdown(f"""
         width: 390px;
         filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.2));
         pointer-events: none;
-        transition: all 0.5s ease-in-out;
+        transition: all 0.4s ease-in-out;
     }}
     </style>
     
@@ -66,10 +66,17 @@ st.sidebar.link_button("Track My Order", "https://wa.me/2347046481507", use_cont
 
 menu = st.sidebar.radio("Navigation", ["🛍️ Shopping Mall", "🛡️ Safety & Escrow", "📥 Merchant Portal"])
 
-# --- PAGE LOGIC ---
-
+# --- ZIMI MOOD TRIGGER LOGIC ---
 if menu == "🛍️ Shopping Mall":
     st.session_state.zimi_mood = ZIMI_WAVING
+elif menu == "🛡️ Safety & Escrow":
+    st.session_state.zimi_mood = ZIMI_THINKING
+elif menu == "📥 Merchant Portal":
+    st.session_state.zimi_mood = ZIMI_WAVING
+
+# --- PAGE CONTENT ---
+
+if menu == "🛍️ Shopping Mall":
     st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Verified Items • Secure Escrow • 10% Protection Fee Included</p></div>', unsafe_allow_html=True)
     
     try:
@@ -104,43 +111,42 @@ if menu == "🛍️ Shopping Mall":
                 st.markdown(f"<p style='font-size:0.8em; margin:0;'>{row.get('name')[:20]}</p><p class='price-text'>{display_price}</p>", unsafe_allow_html=True)
                 st.link_button("Buy", FLUTTERWAVE_LINK, use_container_width=True)
                 
+                # ZIMI CELEBRATES ON RECEIPT GENERATION
                 if st.button(f"Receipt", key=f"r_{i}"):
                     st.session_state.zimi_mood = ZIMI_HAPPY
                     st.balloons()
-                    st.code(f"ITEM: {row.get('name')}\nFEE: {comm_text}\nTOTAL: {display_price}")
+                    st.rerun() # Forces Zimi to update instantly
+                
+                # Hidden code block for the receipt content
+                if st.session_state.zimi_mood == ZIMI_HAPPY:
+                     st.code(f"ITEM: {row.get('name')}\nFEE: {comm_text}\nTOTAL: {display_price}")
+
                 st.markdown('</div>', unsafe_allow_html=True)
     except: st.error("Refreshing Mall...")
 
 elif menu == "🛡️ Safety & Escrow":
-    st.session_state.zimi_mood = ZIMI_THINKING
     st.markdown("<h1 style='text-align:center;'>🛡️ Zimi Safety Vault</h1>", unsafe_allow_html=True)
     st.info("💡 **Zimi Tip:** 'Your money stays in our vault until you say the item is clean!'")
     st.markdown("""
     ### 🛡️ Why use ConfirmAm Escrow?
     * **Anti-Scam:** We hold the money, not the seller. No pay, no loss!
-    * **Quality Check:** You verify the item before we release your hard-earned funds.
-    * **No Stress:** If the item never arrives, you get your money back instantly.
-    * **Verified Sellers:** We only partner with merchants who pass Zimi trust test.
+    * **Quality Check:** You verify the item before we release funds.
+    * **No Stress:** If the item never arrives, you get your money back.
+    * **Verified Sellers:** We only partner with trusted merchants.
     """)
 
 elif menu == "📥 Merchant Portal":
-    st.session_state.zimi_mood = ZIMI_WAVING
     st.markdown("<h1 style='text-align:center;'>Partner with ConfirmAm</h1>", unsafe_allow_html=True)
-    
-    # RESTORED FULL FORM
     with st.form("merchant_registration_full"):
         st.subheader("Business Registration")
         biz_name = st.text_input("Business Name")
         contact_person = st.text_input("Contact Person Name")
         whatsapp = st.text_input("WhatsApp Number")
         category = st.selectbox("What do you sell?", ["Fashion", "Electronics", "Groceries", "Other"])
-        
         submitted = st.form_submit_button("Submit Application")
-        
         if submitted:
             if biz_name and whatsapp:
                 st.session_state.zimi_mood = ZIMI_HAPPY
-                st.success(f"Oshey! {biz_name} application received. Zimi is reviewing it now!")
+                st.success(f"Oshey! {biz_name} application received.")
                 st.balloons()
-            else:
-                st.error("Please fill in your Business Name and WhatsApp.")
+                st.rerun()
