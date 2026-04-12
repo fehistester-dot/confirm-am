@@ -2,17 +2,17 @@ import streamlit as st
 import pandas as pd
 
 # 1. Page Configuration
-st.set_page_config(page_title="ConfirmAm Marketplace", page_icon="🛡️", layout="wide")
+st.set_page_config(
+    page_title="ConfirmAm Marketplace", 
+    page_icon="🛡️",
+    layout="wide"
+)
 
-# 2. THE DATABASE LINKS
-# This ID is from the link you sent me.
+# 2. THE DATABASE LINKS (The "No-Fail" Mobile Links)
 SHEET_ID = "1VubDpOo8wOWTOeyhgu-9oMlagyTvRZUqDc6wkXIpfTY"
-
-# These links force Google to give the data in a format the app understands
+# gid=0 is your first tab, gid=1626214553 is your merchants tab
 PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=0"
-# Note: If your merchants tab isn't showing, we just need to double-check this GID number
 MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=1626214553"
-
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
 # --- ZIMI IMAGE LINKS ---
@@ -20,7 +20,7 @@ ZIMI_SIDEBAR = "https://i.postimg.cc/9QdS9nRv/Gemini-Generated-Image-5wc5485wc54
 ZIMI_MALL = "https://i.postimg.cc/ZKyXbRJ1/Gemini-Generated-Image-5wc5485wc5485wc5-2-removebg-preview.png"
 ZIMI_MERCHANT = "https://i.postimg.cc/7h5dTP0K/Gemini-Generated-Image-5wc5485wc5485wc5-1-removebg-preview.png"
 
-# 3. Styling - Keeping your exact design
+# 3. Enhanced Design & Styling
 st.markdown("""
     <style>
     .stApp { background-color: #fcfcfc; }
@@ -29,6 +29,7 @@ st.markdown("""
         border: 1px solid #eee; margin-bottom: 20px; text-align: center;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.3s;
     }
+    .product-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
     .price-text { color: #1DA1F2; font-weight: 800; font-size: 1.2em; margin: 8px 0; }
     .hero-box { background: linear-gradient(135deg, #1DA1F2 0%, #01579b 100%); color: white; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 25px; }
     .vendor-tag { background: #e1f5fe; color: #01579b; font-size: 0.7em; padding: 2px 8px; border-radius: 20px; font-weight: bold; }
@@ -38,6 +39,7 @@ st.markdown("""
 # --- SIDEBAR ---
 st.sidebar.image(ZIMI_SIDEBAR, use_container_width=True)
 st.sidebar.markdown("<h2 style='text-align:center;'>ConfirmAm</h2>", unsafe_allow_html=True)
+
 currency = st.sidebar.selectbox("Display Currency", ["🇳🇬 NGN (Naira)", "🇺🇸 USD (Dollar)"])
 rate = 1500 
 symbol = "₦" if "NGN" in currency else "$"
@@ -62,22 +64,19 @@ if menu == "🛍️ Shopping Mall":
                     st.markdown('<div class="product-card">', unsafe_allow_html=True)
                     st.image(row.get('image_url', ''), use_container_width=True)
                     
-                    # Safety check for price
-                    try:
-                        price = float(row.get('price', 0)) * 1.05
-                    except:
-                        price = 0
-                        
-                    display_price = price if symbol == "₦" else (price / rate)
+                    raw_price = float(row.get('price', 0))
+                    final_amt = raw_price * 1.05 
+                    display_price = final_amt if symbol == "₦" else (final_amt / rate)
+                    
                     st.markdown(f"""
-                        <span class="vendor-tag">👤 {row.get('seller', 'Vendor')}</span>
-                        <b style="font-size:0.9em; display:block; margin-top:10px;">{row.get('name', 'Product')}</b>
+                        <span class="vendor-tag">👤 {row.get('seller', 'Verified Seller')}</span>
+                        <b style="font-size:0.9em; display:block; margin-top:10px; height:40px; overflow:hidden;">{row.get('name', 'Product')}</b>
                         <p class="price-text">{symbol}{display_price:,.0f}</p>
                     """, unsafe_allow_html=True)
-                    st.link_button("Buy Now", FLUTTERWAVE_LINK, use_container_width=True)
+                    st.link_button("Instant Buy", FLUTTERWAVE_LINK, use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-    except Exception as e:
-        st.error("Database connection issue. Please ensure your Google Sheet is set to 'Anyone with the link can view'.")
+    except:
+        st.error("Zimi is refreshing the stock... please hit 'R' to refresh!")
 
 # --- 2. MERCHANT CATALOG ---
 elif menu == "🏢 Merchant Catalog":
@@ -89,7 +88,6 @@ elif menu == "🏢 Merchant Catalog":
         m_data = pd.read_csv(MERCHANTS_URL)
         m_data.columns = m_data.columns.str.strip().str.lower()
         
-        # This checks for your specific "Niche" or "Category" column
         cat_col = 'category' if 'category' in m_data.columns else 'niche'
         
         if cat_col in m_data.columns:
@@ -98,29 +96,37 @@ elif menu == "🏢 Merchant Catalog":
                 with st.expander(f"📁 {str(cat).upper()} VENDORS", expanded=True):
                     cat_vendors = m_data[m_data[cat_col] == cat]
                     for _, m in cat_vendors.iterrows():
-                        v_name = m.iloc[0] # Takes the first column as the name
-                        v_social = m.get('socials', m.get('instagram/tiktok handle', '@confirmam_user'))
-                        st.markdown(f"✅ **{v_name}** | `{v_social}`")
+                        v_name = m.iloc[0]
+                        v_social = m.get('socials', m.get('instagram/tiktok handle', 'No social link'))
+                        st.markdown(f"✅ **{v_name}** | Socials: `{v_social}`")
         else:
-            # If columns are named differently, just show the list
             for _, m in m_data.iterrows():
                 st.markdown(f"✅ **{m.iloc[0]}**")
     except:
-        st.warning("Merchant directory is updating. Please refresh in a moment.")
+        st.warning("Connecting to Merchant Directory... refresh in 5 seconds.")
 
 # --- 3. SAFETY ---
 elif menu == "🛡️ How Escrow Works":
+    st.image(ZIMI_SIDEBAR, width=150)
     st.header("The Zimi Guarantee")
-    st.write("### 1. Secure Payment\nWe hold your funds in a neutral vault.")
-    st.write("### 2. Verified Delivery\nVendors only get paid once you confirm the item is correct.")
-    st.write("### 3. Scam Protection\nEvery merchant is hand-verified by our team.")
+    st.markdown("""
+    1. **Secured Funds:** We hold your payment in a neutral vault.
+    2. **Verified Quality:** Vendors only get paid once you confirm delivery.
+    3. **No Scams:** Every merchant is hand-verified.
+    """)
+    st.link_button("Contact Support", "https://wa.me/2347046481507")
 
-# --- 4. APPLY ---
+# --- 4. APPLY TO SELL ---
 elif menu == "📥 Apply to Sell":
-    st.title("Join ConfirmAm")
+    st.title("Partner with ConfirmAm")
     with st.form("Merchant Form"):
-        name = st.text_input("Business Name")
-        niche = st.selectbox("Niche", ["Fashion", "Electronics", "Beauty", "Other"])
-        if st.form_submit_button("Submit"):
-            st.success("Application sent! Click below to finish on WhatsApp.")
-            st.link_button("Chat with Admin", f"https://wa.me/2347046481507?text=Apply:%20{name}")
+        b_name = st.text_input("Business Name")
+        b_cat = st.selectbox("Niche", ["Fashion", "Electronics", "Beauty", "Services", "Other"])
+        b_email = st.text_input("Email Address")
+        b_social = st.text_input("Instagram/TikTok Handle")
+        b_phone = st.text_input("WhatsApp Number")
+        
+        if st.form_submit_button("Submit Application"):
+            msg = f"App:%20{b_name}%0ACat:%20{b_cat}%0AEmail:%20{b_email}%0ASocial:%20{b_social}"
+            st.success("Application received! Click below to finish on WhatsApp.")
+            st.link_button("Finalize Verification", f"https://wa.me/2347046481507?text={msg}")
