@@ -2,13 +2,17 @@ import streamlit as st
 import pandas as pd
 
 # 1. Page Configuration
-st.set_page_config(page_title="ConfirmAm Mall", page_icon="🛡️", layout="wide")
+st.set_page_config(
+    page_title="ConfirmAm Marketplace", 
+    page_icon="https://i.postimg.cc/mD3WvH5n/Confirm-Am-Logo-Tick.png",
+    layout="wide"
+)
 
-# 2. THE DATABASE (Using your new link)
+# 2. THE DATABASE & LINKS
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs/export?format=csv"
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
-# 3. Design & Styling
+# 3. Enhanced Design & Styling
 st.markdown("""
     <style>
     .stApp { background-color: #fcfcfc; }
@@ -18,7 +22,8 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
     .price-text { color: #1DA1F2; font-weight: 800; font-size: 1.3em; margin: 10px 0; }
-    .verified-badge { color: #1DA1F2; font-size: 0.8em; font-weight: bold; }
+    .verified-badge { color: #1DA1F2; font-size: 0.8em; font-weight: bold; border: 1px solid #1DA1F2; padding: 2px 5px; border-radius: 5px; }
+    .hero-box { background: #1DA1F2; color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 25px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -26,30 +31,32 @@ st.markdown("""
 st.sidebar.image("https://i.postimg.cc/mD3WvH5n/Confirm-Am-Logo-Tick.png", use_container_width=True)
 st.sidebar.markdown("<h2 style='text-align:center;'>ConfirmAm</h2>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
-st.sidebar.subheader("📦 Order Status")
+
+st.sidebar.subheader("📦 Customer Service")
 st.sidebar.link_button(
     "Track My Order", 
     "https://wa.me/2347046481507?text=Hello%20ConfirmAm,%20I%20just%20paid%20and%20need%20to%20track%20my%20order", 
     use_container_width=True,
     type="primary"
 )
+
 st.sidebar.markdown("---")
-menu = st.sidebar.radio("Navigation", ["🛍️ Shopping Mall", "🛡️ Safety & Escrow"])
+menu = st.sidebar.radio("Navigation", ["🛍️ Shopping Mall", "🛡️ Safety & Escrow", "📥 Merchant Portal"])
 
 # --- SHOPPING MALL ---
 if menu == "🛍️ Shopping Mall":
-    st.markdown("<h1 style='text-align:center;'>ConfirmAm Mall</h1>", unsafe_allow_html=True)
+    st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Verified Items • Secure Escrow • Fast Delivery</p></div>', unsafe_allow_html=True)
     
     try:
         data = pd.read_csv(SHEET_URL)
         data.columns = [c.strip().lower() for c in data.columns]
         
-        # Only show items where status is 'active'
+        # Only show active items
         if 'status' in data.columns:
             data = data[data['status'].str.lower() == 'active']
         
         if data.empty:
-            st.warning("The Mall is currently being stocked. Refresh in 1 minute!")
+            st.info("🏪 Our merchants are updating their stock. Refresh in a moment!")
         else:
             cols = st.columns(2)
             for i, row in data.iterrows():
@@ -58,18 +65,43 @@ if menu == "🛍️ Shopping Mall":
                     st.image(row.get('image_url', 'https://via.placeholder.com/300'), use_container_width=True)
                     
                     is_v = str(row.get('verified', '')).strip().upper() == "TRUE"
-                    badge = '<span class="verified-badge">☑️ Verified</span>' if is_v else ""
+                    badge = '<span class="verified-badge">☑️ VERIFIED</span>' if is_v else ""
                     
                     st.markdown(f"""
-                        <p style="font-size:0.75em; color:#666; margin-bottom:2px;">{row.get('seller', 'ConfirmAm')} {badge}</p>
-                        <b style="font-size:1.2em;">{row.get('name', 'Item')}</b>
+                        <p style="font-size:0.75em; color:#666; margin-bottom:5px;">{row.get('seller', 'ConfirmAm')} {badge}</p>
+                        <b style="font-size:1.1em; display:block; height:40px;">{row.get('name', 'Item')}</b>
                         <p class="price-text">₦{row.get('price', 0):,}</p>
                     """, unsafe_allow_html=True)
                     st.link_button("Buy with Escrow", FLUTTERWAVE_LINK, use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
     except Exception as e:
-        st.error("Connecting to the database...")
+        st.error("Connecting to the ConfirmAm secure database...")
 
+# --- SAFETY & ESCROW ---
 elif menu == "🛡️ Safety & Escrow":
-    st.title("Escrow Protection")
-    st.write("We hold your money safely until you confirm delivery.")
+    st.header("How ConfirmAm Protects You")
+    st.image("https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800", use_container_width=True)
+    st.markdown("""
+    ### Our 4-Step Escrow Process:
+    1. **You Pay:** Funds are held securely by Flutterwave & ConfirmAm.
+    2. **Vendor Ships:** We notify the seller to send your item.
+    3. **You Inspect:** You check the item to ensure it matches the description.
+    4. **Release:** Once you confirm delivery via WhatsApp, we pay the vendor.
+    
+    **Scam-Free. Guaranteed.**
+    """)
+
+# --- MERCHANT PORTAL ---
+elif menu == "📥 Merchant Portal":
+    st.header("Become a Verified Vendor")
+    st.write("Join the most trusted marketplace in Nigeria.")
+    
+    with st.form("Merchant Form"):
+        biz_name = st.text_input("Business Name")
+        biz_type = st.selectbox("Category", ["Fashion", "Electronics", "Beauty", "Other"])
+        ig_handle = st.text_input("Instagram/TikTok Handle")
+        contact = st.text_input("WhatsApp Number")
+        
+        submitted = st.form_submit_button("Submit Application")
+        if submitted:
+            st.success("Application received! Our team will contact you on WhatsApp to verify your inventory.")
