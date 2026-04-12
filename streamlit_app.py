@@ -1,207 +1,159 @@
 import streamlit as st
 import pandas as pd
 
-# 1. Setup & Logo
-st.set_page_config(page_title="ConfirmAm Marketplace", page_icon="🛡️", layout="wide")
+# 1. Page Configuration & Logo
+st.set_page_config(
+    page_title="ConfirmAm Marketplace", 
+    page_icon="🛡️",
+    layout="wide"
+)
 
-# 2. CONFIGURATION
+# 2. THE DATABASE LINKS
 SHEET_ID = "1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs"
 PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Sheet1"
 MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=merchants"
-
-# --- Business Logic ---
-USD_RATE = 1500  # ₦ to $1 exchange rate
-VENDOR_FEE = 0.05  # 5% taken from Vendor payout
-BUYER_MARKUP = 0.05 # 5% added to the Buyer price
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
-# --- ZIMI IMAGE ASSET ---
-# Using the thumbs-up version for the "Reacting" feel
-ZIMI_IMG = "https://i.postimg.cc/q7x2gH07/image-0.png"
+# --- ZIMI IMAGE LINKS (Direct Links from Postimages) ---
+ZIMI_SIDEBAR = "https://i.postimg.cc/9QdS9nRv/Gemini-Generated-Image-5wc5485wc5485wc5-removebg-preview.png"
+ZIMI_MALL = "https://i.postimg.cc/ZKyXbRJ1/Gemini-Generated-Image-5wc5485wc5485wc5-2-removebg-preview.png"
+ZIMI_MERCHANT = "https://i.postimg.cc/7h5dTP0K/Gemini-Generated-Image-5wc5485wc5485wc5-1-removebg-preview.png"
 
-# 3. Styling (Including the REAL Zimi reacting in the corner)
-st.markdown(f"""
+# 3. Enhanced Design & Styling
+st.markdown("""
     <style>
-    .stApp {{ background-color: #fcfcfc; }}
-    .product-card {{ background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; text-align: center; margin-bottom: 20px; }}
-    .price-text {{ color: #1DA1F2; font-weight: 800; font-size: 1.2em; }}
-    .verified-badge {{ color: #1DA1F2; font-size: 0.8em; font-weight: bold; border: 1px solid #1DA1F2; padding: 2px 5px; border-radius: 5px; }}
-    .trust-bar {{ background-color: #e1f5fe; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 20px; border: 1px dashed #01579b; }}
+    .stApp { background-color: #fcfcfc; }
+    .product-card, .merchant-card {
+        background-color: white; padding: 15px; border-radius: 15px;
+        border: 1px solid #eee; margin-bottom: 20px; text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .price-text { color: #1DA1F2; font-weight: 800; font-size: 1.3em; margin: 10px 0; }
+    .verified-badge { color: #1DA1F2; font-size: 0.8em; font-weight: bold; border: 1px solid #1DA1F2; padding: 2px 5px; border-radius: 5px; }
+    .hero-box { background: #1DA1F2; color: white; padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 25px; }
+    .trust-bar { background-color: #e1f5fe; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 20px; border: 1px dashed #01579b; }
     
-    /* --- REAL ZIMI FLOATING BUTTON --- */
-    .zimi-corner {{
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 1000;
-        transition: all 0.3s ease-in-out;
-        cursor: pointer;
-        text-align: center;
-    }}
-    .zimi-corner:hover {{
-        transform: scale(1.1) rotate(-5deg);
-    }}
-    .zimi-bubble {{
-        background: #1DA1F2;
-        color: white;
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 0.75em;
-        font-weight: bold;
-        margin-bottom: 5px;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
-    }}
-    .zimi-avatar {{
-        width: 80px; 
-        height: 80px;
-        background: white;
-        border-radius: 50%;
-        border: 3px solid #1DA1F2;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0px 4px 15px rgba(0,0,0,0.15);
-        overflow: hidden;
-    }}
-    .zimi-avatar img {{
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }}
+    /* Make Zimi look perfect in the sidebar */
+    .stSidebar [data-testid="stImage"] img { border-radius: 15px; }
     </style>
-    
-    <div class="zimi-corner">
-        <div class="zimi-bubble">Zimi is here!</div>
-        <div class="zimi-avatar">
-            <img src="{ZIMI_IMG}">
-        </div>
-    </div>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR ---
-st.sidebar.image(ZIMI_IMG, use_container_width=True)
-st.sidebar.title("ConfirmAm")
-st.sidebar.markdown("<p style='text-align:center;'><b>I am Zimi, your escrow guide!</b></p>", unsafe_allow_html=True)
-
-# 🤖 FEATURE: ZIMI AI ASSISTANT (Sidebar version)
-with st.sidebar.expander("🛡️ Talk to Zimi", expanded=False):
-    st.markdown(f'''
-        <div style="background:#f0f2f6; padding:10px; border-radius:10px; border-left:5px solid #1DA1F2;">
-            <b>Zimi:</b> Hey! I'm watching over your transactions. Ask me anything about our verified vendors or how to pay!
-        </div>
-    ''', unsafe_allow_html=True)
-    user_ask = st.text_input("Message Zimi...")
-    if user_ask:
-        st.info("Zimi is typing...")
-
+# --- SIDEBAR (Zimi is BACK!) ---
+st.sidebar.image(ZIMI_SIDEBAR, use_container_width=True)
+st.sidebar.markdown("<h2 style='text-align:center;'>ConfirmAm</h2>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='text-align:center; color:#666; font-size:0.9em;'>Welcome, I am Zimi! 🛡️<br>Your Escrow Guide.</p>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
-currency = st.sidebar.radio("💰 Select Currency", ["Naira (₦)", "Dollar ($)"])
+
+st.sidebar.subheader("📦 Order Support")
+st.sidebar.link_button(
+    "Track My Order", 
+    "https://wa.me/2347046481507?text=Hello%20ConfirmAm,%20I%20just%20paid%20and%20need%20to%20send%20my%20address", 
+    use_container_width=True,
+    type="primary"
+)
+
 st.sidebar.markdown("---")
 menu = st.sidebar.radio("Navigate", ["🛍️ Shopping Mall", "🛡️ Safety & Escrow", "🏢 Merchant Directory", "📥 Apply to Sell"])
 
-# 📦 FEATURE: QUICK TRACKER
-st.sidebar.markdown("---")
-if st.sidebar.button("📦 Track My Order"):
-    st.sidebar.link_button("Chat with Support", "https://wa.me/2347046481507?text=Hello%20Zimi,%20I%20want%20to%20track%20my%20order.")
-
-# --- 🛍️ SHOPPING MALL ---
+# --- 1. SHOPPING MALL (Zimi Greet) ---
 if menu == "🛍️ Shopping Mall":
-    st.markdown('<h1 style="text-align:center;">ConfirmAm Mall</h1>', unsafe_allow_html=True)
-    st.markdown('<div class="trust-bar">🛡️ <b>Escrow Protected:</b> Money held safely until delivery.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Verified Items • Secure Escrow • Fast Delivery</p></div>', unsafe_allow_html=True)
     
-    search_query = st.text_input("🔍 Search products...", "").lower()
-
+    # Personal greeting from Zimi with her Mall Photo
+    col_a, col_b = st.columns([1, 4])
+    with col_a:
+        st.image(ZIMI_MALL, width=100)
+    with col_b:
+        st.markdown("""
+            <div style="background-color: #e1f5fe; padding: 15px; border-radius: 10px; border-left: 5px solid #01579b;">
+                <p style="margin:0; color: #01579b;">
+                    👋 <b>Hello there!</b> I'm Zimi. I've personally verified these listings. Remember, your money is safe with us until you get your item. Happy Shopping!
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown('<div class="trust-bar"><p style="margin:0; color: #01579b; font-size: 0.85em;">🛡️ <b>Escrow Protected:</b> Money held safely until delivery. <br>🚚 <b>Real-time Shipping:</b> Rates calculated via WhatsApp after payment.</p></div>', unsafe_allow_html=True)
+    
     try:
         data = pd.read_csv(PRODUCTS_URL)
         data.columns = [c.strip().lower() for c in data.columns]
+        if 'status' in data.columns:
+            data = data[data['status'].str.lower() == 'active']
         
-        items = data[(data['status'].str.lower() == 'active') & 
-                     (data['name'].str.lower().str.contains(search_query))]
-
-        if items.empty:
-            st.info("No items found. Try a different search!")
+        if data.empty:
+            st.info("🏪 Zimi is stocking the shelves. Check back in a moment!")
         else:
             cols = st.columns(2)
-            for i, row in items.iterrows():
+            for i, row in data.iterrows():
                 with cols[i % 2]:
-                    # --- PRICING LOGIC ---
-                    base_p = row.get('price', 0)
-                    buyer_p = base_p * (1 + BUYER_MARKUP)
-                    vendor_p = base_p * (1 - VENDOR_FEE)
-                    total_comm = buyer_p - vendor_p
-                    
-                    price_display = f"₦{buyer_p:,.0f}" if currency == "Naira (₦)" else f"${(buyer_p/USD_RATE):,.2f}"
-                    
-                    st.markdown(f'<div class="product-card">', unsafe_allow_html=True)
-                    st.image(row.get('image_url'), use_container_width=True)
-                    
-                    is_v = str(row.get('verified')).upper() == "TRUE"
+                    st.markdown('<div class="product-card">', unsafe_allow_html=True)
+                    st.image(row.get('image_url', 'https://via.placeholder.com/300'), use_container_width=True)
+                    is_v = str(row.get('verified', '')).strip().upper() == "TRUE"
                     badge = '<span class="verified-badge">☑️ VERIFIED</span>' if is_v else ""
-                    
-                    st.markdown(f"<h5>{row.get('name')} {badge}</h5>", unsafe_allow_html=True)
-                    st.markdown(f"<p class='price-text'>{price_display}</p>", unsafe_allow_html=True)
-                    
-                    with st.expander("💼 Admin: Commission Breakdown"):
-                        st.write(f"**Buyer Pays:** ₦{buyer_p:,.0f}")
-                        st.write(f"**Vendor Receives:** ₦{vendor_p:,.0f}")
-                        st.success(f"**Total Profit:** ₦{total_comm:,.0f}")
-                    
+                    st.markdown(f"""
+                        <p style="font-size:0.75em; color:#666; margin-bottom:5px;">{row.get('seller', 'ConfirmAm')} {badge}</p>
+                        <b style="font-size:1.1em; display:block; height:40px;">{row.get('name', 'Item')}</b>
+                        <p class="price-text">₦{row.get('price', 0):,}</p>
+                    """, unsafe_allow_html=True)
                     st.link_button("Buy with Escrow", FLUTTERWAVE_LINK, use_container_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-    except:
-        st.error("Connecting to Warehouse...")
+    except Exception as e:
+        st.error("Connecting to Warehouse... Please refresh.")
 
-# --- 🛡️ SAFETY & ESCROW ---
+# --- 2. SAFETY & ESCROW ---
 elif menu == "🛡️ Safety & Escrow":
-    st.header("How ConfirmAm Protects You")
+    st.markdown("<h1 style='text-align:center;'>Your Protection is Our Priority</h1>", unsafe_allow_html=True)
     st.image("https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800", use_container_width=True)
-    st.write("### Our 4-Step Protection Plan:")
-    st.write("1. **You Pay:** Funds are held securely.\n2. **Vendor Ships:** We authorize delivery.\n3. **Real-time Logistics:** Shipping handled via WhatsApp.\n4. **Release:** Vendor is paid only after delivery is confirmed.")
+    st.markdown("---")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.subheader("🛡️ Scam Prevention")
+        st.write("ConfirmAm/Zimi acts as your middleman. We verify payment first. The vendor only ships once funds are secured.")
+    with col2:
+        st.subheader("🚚 Fair Delivery")
+        st.write("Rates are calculated via WhatsApp after payment to ensure you get the most accurate prices.")
+    with col3:
+        st.subheader("🤝 Direct Support")
+        st.write("Our WhatsApp agents track your order from the moment you pay until the item is in your hands.")
+    st.info("💡 **Zimi keeps your money safe. Sellers are only paid when you confirm you've received your item.**")
 
-# --- 🏢 MERCHANT DIRECTORY ---
+# --- 3. MERCHANT DIRECTORY ---
 elif menu == "🏢 Merchant Directory":
-    st.header("Our Verified Partners")
+    st.markdown("<h1 style='text-align:center;'>Our Verified Merchants</h1>", unsafe_allow_html=True)
     try:
         m_data = pd.read_csv(MERCHANTS_URL)
         m_data.columns = [c.strip().lower() for c in m_data.columns]
-        for _, m in m_data.iterrows():
-            st.markdown(f"""
-            <div style="background:white; padding:15px; border-radius:10px; border:1px solid #eee; margin-bottom:10px;">
-                <h4>{m.get('name')} {'☑️' if str(m.get('verified')).upper() == 'TRUE' else ''}</h4>
-                <p style="color:#666;">{m.get('category')} | {m.get('socials')}</p>
-            </div>
-            """, unsafe_allow_html=True)
+        if m_data.empty:
+            st.info("No merchants listed yet.")
+        else:
+            for _, m in m_data.iterrows():
+                is_mv = str(m.get('verified')).upper() == 'TRUE'
+                st.markdown(f"""
+                <div class="merchant-card">
+                    <h3 style="margin:0;">{m.get('name', 'Business')} {'☑️' if is_mv else ''}</h3>
+                    <p style="color:#666;">Category: {m.get('category', 'General')} | {m.get('socials', '')}</p>
+                </div>
+                """, unsafe_allow_html=True)
     except:
-        st.warning("No merchants listed yet.")
+        st.warning("Ensure you have a tab named 'merchants' in your Google Sheet!")
 
-# --- 📥 APPLY TO SELL ---
+# --- 4. APPLY TO SELL ---
 elif menu == "📥 Apply to Sell":
-    st.header("Join the Marketplace")
+    col_x, col_y = st.columns([1, 3])
+    with col_x:
+        st.image(ZIMI_MERCHANT, use_container_width=True)
+    with col_y:
+        st.header("Become a Verified Vendor")
+        st.write("Join the most trusted marketplace. Fill this out and Zimi will connect with you via WhatsApp.")
     
-    with st.expander("✨ Commission & Vendor Protection"):
-        st.info("Transparency for our Vendors")
-        st.write("""
-        - **Automatic Markup:** We add 5% for the buyer.
-        - **Platform Fee:** We deduct 5% from the final sale.
-        - **Security:** Guarantees you are never scammed.
-        """)
-
     with st.form("Merchant Form"):
         biz_name = st.text_input("Business Name")
-        biz_cat = st.selectbox("Category", ["Fashion", "Tech", "Beauty", "Home", "Other"])
-        email = st.text_input("Email Address")
-        socials = st.text_input("Social Media Handle (IG/TikTok)")
-        wa_num = st.text_input("WhatsApp Number")
-        location = st.text_input("Business Location (City/State)")
-        
+        biz_type = st.selectbox("Category", ["Fashion", "Electronics", "Beauty", "Other"])
+        ig_handle = st.text_input("Instagram/TikTok Handle")
+        contact = st.text_input("WhatsApp Number")
         submitted = st.form_submit_button("Submit Application")
-        
         if submitted:
-            if biz_name and wa_num:
-                msg = (f"New Merchant Application:%0A"
-                       f"- Business: {biz_name}%0A"
-                       f"- Email: {email}%0A"
-                       f"- WhatsApp: {wa_num}")
-                wa_url = f"https://wa.me/2347046481507?text={msg}"
-                st.success("Application ready!")
-                st.link_button("Complete on WhatsApp", wa_url, type="primary")
+            msg = f"Merchant Application:%20{biz_name}%0ACategory:%20{biz_type}%0ASocials:%20{ig_handle}%0AContact:%20{contact}"
+            wa_url = f"https://wa.me/2347046481507?text={msg}"
+            st.success("Zimi is preparing your WhatsApp verification...")
+            st.link_button("Complete Application on WhatsApp", wa_url, type="primary")
