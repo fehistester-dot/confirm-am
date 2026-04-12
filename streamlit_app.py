@@ -84,10 +84,14 @@ if menu == "🛍️ Shopping Mall":
         for i, (idx, row) in enumerate(data.iterrows()):
             with cols[i % 5]:
                 st.markdown('<div class="product-card">', unsafe_allow_html=True)
-                try: st.image(row.get('image_url', ''), use_container_width=True)
+                
+                # Image logic
+                img_url = row.get('image_url', row.get('image', ''))
+                try: st.image(img_url, use_container_width=True)
                 except: st.warning("Image Loading...")
                 
-                # Hidden Admin Commission (5%)
+                # INVISIBLE BUYER FEE (5%)
+                # The buyer sees only the final price. We don't mention the fee here.
                 try:
                     price = float(row.get('price', 0)) * 1.05
                 except:
@@ -104,52 +108,50 @@ if menu == "🛍️ Shopping Mall":
     else:
         st.info("Zimi is stocking the shelves... Please refresh.")
 
-# --- 2. MERCHANT CATALOG (FIXED) ---
+# --- 2. MERCHANT CATALOG (FIXED DATA ENGINE) ---
 elif menu == "🏢 Merchant Catalog":
     st.title("Verified Partners")
-    st.write("Every merchant listed here has been vetted for quality and reliability.")
+    st.write("Vetted merchants active on ConfirmAm.")
     m_data = load_sheet_data(MERCHANTS_URL)
     
     if not m_data.empty:
-        # We use iloc to ensure we find data even if the column names are slightly different in the sheet
         for _, row in m_data.iterrows():
-            name = row.iloc[0] # Assumes first column is Business Name
+            # Robust mapping: looks for name in any of the first two columns
+            name = row.iloc[0] if pd.notna(row.iloc[0]) else row.iloc[1]
             if pd.notna(name):
-                with st.expander(f"✅ {name}"):
-                    # Search for niche/category and handle dynamically
-                    niche = row.get('category', row.get('niche', 'General Merchant'))
-                    handle = row.get('socials', row.get('handle', 'Contact Admin'))
+                with st.expander(f"✅ {str(name).upper()}"):
+                    niche = row.get('niche', row.get('category', 'General Vendor'))
+                    social = row.get('instagram', row.get('socials', row.get('handle', 'Verified')))
                     st.write(f"**Niche:** {niche}")
-                    st.write(f"**Social Handle:** `{handle}`")
-                    st.success("Verified Status: Active")
+                    st.write(f"**Social:** `{social}`")
+                    st.markdown("*Escrow status: Enabled*")
     else:
-        st.warning("Zimi is currently verifying new partners. Check back shortly!")
+        st.warning("Updating partner list... Refresh to see new entries.")
 
-# --- 3. SAFETY (ADDED CONTENT) ---
+# --- 3. SAFETY ---
 elif menu == "🛡️ How Escrow Works":
     st.header("The Zimi Guarantee")
     st.write("ConfirmAm uses a secure Escrow system to make sure no one gets scammed.")
     
     st.markdown("""
     <div class="safety-card">
-    <h4>1. You Place an Order</h4>
-    <p>Your payment is held securely by ConfirmAm. The seller sees the order but cannot touch the money yet.</p>
+    <h4>1. Secure Payment</h4>
+    <p>We hold your payment in a neutral vault. The seller only sees that the order is paid.</p>
     </div>
     <div class="safety-card">
-    <h4>2. Merchant Delivers</h4>
-    <p>The verified merchant ships your item or provides the service as promised.</p>
+    <h4>2. Verification</h4>
+    <p>Merchant ships the product. You inspect it upon arrival.</p>
     </div>
     <div class="safety-card">
-    <h4>3. Funds Released</h4>
-    <p>Once you confirm you have received exactly what you paid for, we release the payment to the merchant. If there is a problem, you get a refund.</p>
+    <h4>3. Release</h4>
+    <p>Money is only released to the seller after you confirm satisfaction.</p>
     </div>
     """, unsafe_allow_html=True)
-    
-    st.info("A 5% protection fee is included in every transaction to cover this legal safety net.")
 
-# --- 4. APPLY TO SELL (MATCHED TO PHOTO) ---
+# --- 4. APPLY TO SELL (VISIBLE SELLER FEE) ---
 elif menu == "📥 Apply to Sell":
-    st.markdown("### Join Nigeria's most trusted escrow marketplace.")
+    st.markdown("### Become a Verified Merchant")
+    st.info("Note: A 5% escrow commission applies to all successful sales on this platform.")
     
     with st.form("Merchant Application"):
         b_name = st.text_input("Business Name")
@@ -162,19 +164,12 @@ elif menu == "📥 Apply to Sell":
         
         if submitted:
             if b_name and b_phone:
-                st.success("Application received! Click below to finalize.")
-                whatsapp_msg = f"Business: {b_name}%0ANiche: {b_niche}%0ASocial: {b_social}"
+                st.success("Application started! Click below to send your docs.")
+                whatsapp_msg = f"Merchant%20App:%20{b_name}%0ANiche:%20{b_niche}%0AEmail:%20{b_email}"
                 st.link_button("Finalize on WhatsApp", f"https://wa.me/2347046481507?text={whatsapp_msg}")
-            else:
-                st.error("Please fill in Business Name and WhatsApp Number.")
 
-# --- 5. CONTACT SUPPORT (ADDED) ---
+# --- 5. CONTACT SUPPORT ---
 elif menu == "📞 Contact Support":
-    st.header("Need Help?")
-    st.write("Our support team is available 24/7 to resolve disputes or answer questions.")
-    
-    c1, c2 = st.columns(2)
-    with c1:
-        st.link_button("Chat on WhatsApp", "https://wa.me/2347046481507")
-    with c2:
-        st.write("📧 support@confirmam.com")
+    st.header("Dispute Resolution & Help")
+    st.write("Need help with a transaction?")
+    st.link_button("Chat with Admin", "https://wa.me/2347046481507")
