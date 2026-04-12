@@ -25,14 +25,9 @@ if 'zimi_mood' not in st.session_state:
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #fcfcfc; }}
-    
     .product-card {{
-        background-color: white; 
-        padding: 8px; 
-        border-radius: 10px;
-        border: 1px solid #eee; 
-        margin-bottom: 10px; 
-        text-align: center;
+        background-color: white; padding: 8px; border-radius: 10px;
+        border: 1px solid #eee; margin-bottom: 10px; text-align: center;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }}
     .price-text {{ color: #1DA1F2; font-weight: 800; font-size: 1.0em; margin: 3px 0; }}
@@ -80,12 +75,10 @@ if menu == "🛍️ Shopping Mall":
     try:
         data = pd.read_csv(SHEET_URL)
         data.columns = [c.strip().lower() for c in data.columns]
-
         search_query = st.text_input("🔍 Search products...", "").lower()
         
         if not search_query:
-            # FIXED THE SYNTAX ERROR BELOW (Removed the backslash causing the crash)
-            st.markdown('<div class="featured-box"><b>🌟 Zimi\'s Pick:</b> Highly rated vendor.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="featured-box"><b>🌟 Zimi Pick:</b> Highly rated vendor.</div>', unsafe_allow_html=True)
             feat = data.iloc[0]
             st.info(f"Top Choice Today: {feat.get('name', 'Premium Choice')}")
 
@@ -120,25 +113,34 @@ if menu == "🛍️ Shopping Mall":
 
 elif menu == "🛡️ Safety & Escrow":
     st.session_state.zimi_mood = ZIMI_THINKING
-    st.markdown("<h1 style='text-align:center;'>🛡️ Zimi's Safety Vault</h1>", unsafe_allow_html=True)
-    st.info("💡 **Zimi's Tip:** 'Your money stays in our vault until you say the item is clean!'")
+    st.markdown("<h1 style='text-align:center;'>🛡️ Zimi Safety Vault</h1>", unsafe_allow_html=True)
+    st.info("💡 **Zimi Tip:** 'Your money stays in our vault until you say the item is clean!'")
     st.markdown("""
     ### 🛡️ Why use ConfirmAm Escrow?
-    * **Anti-Scam:** We hold the money, not the seller.
-    * **Quality Check:** Verify before you release funds.
-    * **No Stress:** If it's 'wash', you get your money back.
-    * **Verified Sellers:** Only trusted partners make it past Zimi's review.
+    * **Anti-Scam:** We hold the money, not the seller. No pay, no loss!
+    * **Quality Check:** You verify the item before we release your hard-earned funds.
+    * **No Stress:** If the item never arrives, you get your money back instantly.
+    * **Verified Sellers:** We only partner with merchants who pass Zimi trust test.
     """)
 
 elif menu == "📥 Merchant Portal":
     st.session_state.zimi_mood = ZIMI_WAVING
-    st.markdown("<h1 style='text-align:center;'>Merchant Portal</h1>", unsafe_allow_html=True)
-    with st.form("merchant_reg"):
+    st.markdown("<h1 style='text-align:center;'>Partner with ConfirmAm</h1>", unsafe_allow_html=True)
+    
+    # RESTORED FULL FORM
+    with st.form("merchant_registration_full"):
         st.subheader("Business Registration")
-        b_name = st.text_input("Business Name")
-        phone = st.text_input("WhatsApp Number")
-        submit = st.form_submit_button("Submit Application")
-        if submit and b_name:
-            st.session_state.zimi_mood = ZIMI_HAPPY
-            st.success(f"Oshey! {b_name} application received.")
-            st.balloons()
+        biz_name = st.text_input("Business Name")
+        contact_person = st.text_input("Contact Person Name")
+        whatsapp = st.text_input("WhatsApp Number")
+        category = st.selectbox("What do you sell?", ["Fashion", "Electronics", "Groceries", "Other"])
+        
+        submitted = st.form_submit_button("Submit Application")
+        
+        if submitted:
+            if biz_name and whatsapp:
+                st.session_state.zimi_mood = ZIMI_HAPPY
+                st.success(f"Oshey! {biz_name} application received. Zimi is reviewing it now!")
+                st.balloons()
+            else:
+                st.error("Please fill in your Business Name and WhatsApp.")
