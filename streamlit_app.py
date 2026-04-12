@@ -14,7 +14,7 @@ PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=o
 MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=merchants"
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
-# --- ZIMI IMAGE LINKS (Direct Links from Postimages) ---
+# --- ZIMI IMAGE LINKS ---
 ZIMI_SIDEBAR = "https://i.postimg.cc/9QdS9nRv/Gemini-Generated-Image-5wc5485wc5485wc5-removebg-preview.png"
 ZIMI_MALL = "https://i.postimg.cc/ZKyXbRJ1/Gemini-Generated-Image-5wc5485wc5485wc5-2-removebg-preview.png"
 ZIMI_MERCHANT = "https://i.postimg.cc/7h5dTP0K/Gemini-Generated-Image-5wc5485wc5485wc5-1-removebg-preview.png"
@@ -23,22 +23,30 @@ ZIMI_MERCHANT = "https://i.postimg.cc/7h5dTP0K/Gemini-Generated-Image-5wc5485wc5
 st.markdown("""
     <style>
     .stApp { background-color: #fcfcfc; }
-    .product-card, .merchant-card {
+    .product-card {
         background-color: white; padding: 15px; border-radius: 15px;
         border: 1px solid #eee; margin-bottom: 20px; text-align: center;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .merchant-row {
+        background-color: white; padding: 15px; border-radius: 12px;
+        border-left: 5px solid #1DA1F2; margin-bottom: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .category-header {
+        background: #1DA1F2; color: white; padding: 8px 15px;
+        border-radius: 8px; margin-top: 20px; font-size: 1.1em; font-weight: bold;
     }
     .price-text { color: #1DA1F2; font-weight: 800; font-size: 1.3em; margin: 10px 0; }
     .verified-badge { color: #1DA1F2; font-size: 0.8em; font-weight: bold; border: 1px solid #1DA1F2; padding: 2px 5px; border-radius: 5px; }
     .hero-box { background: #1DA1F2; color: white; padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 25px; }
     .trust-bar { background-color: #e1f5fe; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 20px; border: 1px dashed #01579b; }
     
-    /* Make Zimi look perfect in the sidebar */
     .stSidebar [data-testid="stImage"] img { border-radius: 15px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR (Zimi is BACK!) ---
+# --- SIDEBAR ---
 st.sidebar.image(ZIMI_SIDEBAR, use_container_width=True)
 st.sidebar.markdown("<h2 style='text-align:center;'>ConfirmAm</h2>", unsafe_allow_html=True)
 st.sidebar.markdown("<p style='text-align:center; color:#666; font-size:0.9em;'>Welcome, I am Zimi! 🛡️<br>Your Escrow Guide.</p>", unsafe_allow_html=True)
@@ -53,13 +61,12 @@ st.sidebar.link_button(
 )
 
 st.sidebar.markdown("---")
-menu = st.sidebar.radio("Navigate", ["🛍️ Shopping Mall", "🛡️ Safety & Escrow", "🏢 Merchant Directory", "📥 Apply to Sell"])
+menu = st.sidebar.radio("Navigate", ["🛍️ Shopping Mall", "🛡️ Safety & Escrow", "🏢 Merchant Catalog", "📥 Apply to Sell"])
 
-# --- 1. SHOPPING MALL (Zimi Greet) ---
+# --- 1. SHOPPING MALL ---
 if menu == "🛍️ Shopping Mall":
     st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Verified Items • Secure Escrow • Fast Delivery</p></div>', unsafe_allow_html=True)
     
-    # Personal greeting from Zimi with her Mall Photo
     col_a, col_b = st.columns([1, 4])
     with col_a:
         st.image(ZIMI_MALL, width=100)
@@ -117,25 +124,36 @@ elif menu == "🛡️ Safety & Escrow":
         st.write("Our WhatsApp agents track your order from the moment you pay until the item is in your hands.")
     st.info("💡 **Zimi keeps your money safe. Sellers are only paid when you confirm you've received your item.**")
 
-# --- 3. MERCHANT DIRECTORY ---
-elif menu == "🏢 Merchant Directory":
-    st.markdown("<h1 style='text-align:center;'>Our Verified Merchants</h1>", unsafe_allow_html=True)
+# --- 3. MERCHANT CATALOG (Organized Grouping) ---
+elif menu == "🏢 Merchant Catalog":
+    col_m1, col_m2 = st.columns([1, 4])
+    with col_m1:
+        st.image(ZIMI_MERCHANT, width=120)
+    with col_m2:
+        st.markdown("<h1>Verified Merchant Catalog</h1>", unsafe_allow_html=True)
+        st.write("Browse our trusted partners by category.")
+
     try:
         m_data = pd.read_csv(MERCHANTS_URL)
         m_data.columns = [c.strip().lower() for c in m_data.columns]
+        
         if m_data.empty:
-            st.info("No merchants listed yet.")
+            st.info("Zimi is currently verifying new merchants. Check back soon!")
         else:
-            for _, m in m_data.iterrows():
-                is_mv = str(m.get('verified')).upper() == 'TRUE'
-                st.markdown(f"""
-                <div class="merchant-card">
-                    <h3 style="margin:0;">{m.get('name', 'Business')} {'☑️' if is_mv else ''}</h3>
-                    <p style="color:#666;">Category: {m.get('category', 'General')} | {m.get('socials', '')}</p>
-                </div>
-                """, unsafe_allow_html=True)
+            categories = m_data['category'].unique()
+            for cat in categories:
+                st.markdown(f"<div class='category-header'>{cat.upper()} SELLERS</div>", unsafe_allow_html=True)
+                cat_vendors = m_data[m_data['category'] == cat]
+                for _, m in cat_vendors.iterrows():
+                    is_mv = str(m.get('verified')).upper() == 'TRUE'
+                    st.markdown(f"""
+                    <div class="merchant-row">
+                        <span style="font-size:1.1em; font-weight:bold;">{m.get('name', 'Business')}</span> {'☑️' if is_mv else ''}<br>
+                        <span style="color:#666; font-size:0.9em;">Socials: {m.get('socials', '')}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
     except:
-        st.warning("Ensure you have a tab named 'merchants' in your Google Sheet!")
+        st.warning("Check your 'merchants' tab headers: name, category, socials, contact, verified")
 
 # --- 4. APPLY TO SELL ---
 elif menu == "📥 Apply to Sell":
