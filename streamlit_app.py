@@ -54,12 +54,11 @@ if menu == "🛍️ Shopping Mall":
             for i, row in items.iterrows():
                 with cols[i % 2]:
                     # --- PRICING LOGIC ---
-                    base_p = row.get('price', 0) # Price entered in Google Sheet
-                    buyer_p = base_p * (1 + BUYER_MARKUP) # 5% added for buyer
-                    vendor_p = base_p * (1 - VENDOR_FEE) # 5% removed from vendor
-                    total_comm = buyer_p - vendor_p # Your total 10% spread
+                    base_p = row.get('price', 0)
+                    buyer_p = base_p * (1 + BUYER_MARKUP)
+                    vendor_p = base_p * (1 - VENDOR_FEE)
+                    total_comm = buyer_p - vendor_p
                     
-                    # Currency Display
                     price_display = f"₦{buyer_p:,.0f}" if currency == "Naira (₦)" else f"${(buyer_p/USD_RATE):,.2f}"
                     
                     st.markdown(f'<div class="product-card">', unsafe_allow_html=True)
@@ -71,11 +70,10 @@ if menu == "🛍️ Shopping Mall":
                     st.markdown(f"<h5>{row.get('name')} {badge}</h5>", unsafe_allow_html=True)
                     st.markdown(f"<p class='price-text'>{price_display}</p>", unsafe_allow_html=True)
                     
-                    # ADMIN VIEW (Hidden Profit Info)
                     with st.expander("💼 Admin: Commission Breakdown"):
-                        st.info("This section is only for the marketplace owner to track profits.")
-                        st.write(f"**Buyer Pays:** ₦{buyer_p:,.0f} (Base + 5% markup)")
-                        st.write(f"**Vendor Receives:** ₦{vendor_p:,.0f} (Base - 5% fee)")
+                        st.info("Marketplace Owner View")
+                        st.write(f"**Buyer Pays:** ₦{buyer_p:,.0f}")
+                        st.write(f"**Vendor Receives:** ₦{vendor_p:,.0f}")
                         st.success(f"**Total Profit:** ₦{total_comm:,.0f}")
                     
                     st.link_button("Buy with Escrow", FLUTTERWAVE_LINK, use_container_width=True)
@@ -88,7 +86,7 @@ elif menu == "🛡️ Safety & Escrow":
     st.header("How ConfirmAm Protects You")
     st.image("https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800", use_container_width=True)
     st.write("### Our 4-Step Protection Plan:")
-    st.write("1. **You Pay:** Funds are held securely by us.\n2. **Vendor Ships:** We authorize the seller to send the item.\n3. **Real-time Logistics:** Shipping calculated via WhatsApp for fair rates.\n4. **Release:** Vendor is paid ONLY after you confirm delivery.")
+    st.write("1. **You Pay:** Funds are held securely.\n2. **Vendor Ships:** We authorize delivery.\n3. **Real-time Logistics:** Shipping handled via WhatsApp.\n4. **Release:** Vendor is paid only after delivery is confirmed.")
 
 # --- 🏢 MERCHANT DIRECTORY ---
 elif menu == "🏢 Merchant Directory":
@@ -109,18 +107,35 @@ elif menu == "🏢 Merchant Directory":
 # --- 📥 APPLY TO SELL ---
 elif menu == "📥 Apply to Sell":
     st.header("Join the Marketplace")
-    st.write("List your products and reach thousands of buyers securely.")
     
-    with st.expander("✨ Why sell on ConfirmAm?"):
+    with st.expander("✨ Commission & Vendor Protection"):
+        st.info("Transparency for our Vendors")
         st.write("""
-        - **Secure Payments:** No more 'pay on delivery' risks. We hold the money.
-        - **Verified Status:** Build trust with our blue checkmark.
-        - **Fair Pricing:** We only take a 5% commission from your final sale price to cover escrow and platform security.
+        To ensure platform security and escrow services, ConfirmAm operates on a small commission structure:
+        - **Automatic Markup:** We add 5% to your listing price for the buyer to cover transaction fees.
+        - **Platform Fee:** We deduct 5% from the final sale to cover escrow management.
+        - **Security:** This ensures you are never scammed and your money is guaranteed once the buyer receives the item.
         """)
+
+    with st.form("Merchant Form"):
+        biz_name = st.text_input("Business Name")
+        biz_cat = st.selectbox("Category", ["Fashion", "Tech", "Beauty", "Home", "Other"])
+        socials = st.text_input("Social Media Handle (IG/TikTok)")
+        wa_num = st.text_input("WhatsApp Number")
+        location = st.text_input("Business Location (City/State)")
         
-    with st.form("Apply"):
-        name = st.text_input("Business Name")
-        cat = st.selectbox("Category", ["Fashion", "Tech", "Beauty", "Other"])
-        if st.form_submit_button("Submit Application"):
-            wa_url = f"https://wa.me/2347046481507?text=Merchant%20Application:%20{name}"
-            st.link_button("Complete on WhatsApp", wa_url)
+        submitted = st.form_submit_button("Submit Application")
+        
+        if submitted:
+            if biz_name and wa_num:
+                msg = (f"New Merchant Application:%0A"
+                       f"- Business: {biz_name}%0A"
+                       f"- Category: {biz_cat}%0A"
+                       f"- Socials: {socials}%0A"
+                       f"- Location: {location}%0A"
+                       f"- WhatsApp: {wa_num}")
+                wa_url = f"https://wa.me/2347046481507?text={msg}"
+                st.success("Application ready! Click below to send.")
+                st.link_button("Complete on WhatsApp", wa_url, type="primary")
+            else:
+                st.error("Please fill in the Business Name and WhatsApp Number.")
