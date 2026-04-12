@@ -12,8 +12,9 @@ st.set_page_config(
 
 # 2. THE DATABASE LINKS
 SHEET_ID = "1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs"
-PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=0"
-MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=1626214553"
+# We pull by sheet name now to ensure the Merchant info loads correctly
+PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&sheet=Sheet1"
+MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&sheet=merchants"
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
 # --- ZIMI IMAGE LINKS ---
@@ -25,9 +26,10 @@ def load_sheet_data(url):
     try:
         response = requests.get(url, headers=headers, timeout=10)
         df = pd.read_csv(StringIO(response.text), on_bad_lines='skip')
-        df.columns = [c.strip().lower() for c in df.columns]
+        # Clean column names
+        df.columns = [str(c).strip().lower() for c in df.columns]
         return df.dropna(how='all')
-    except:
+    except Exception as e:
         return pd.DataFrame()
 
 # 3. Styling
@@ -44,19 +46,11 @@ st.markdown("""
     .hero-box { background: linear-gradient(135deg, #1DA1F2 0%, #01579b 100%); color: white; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 25px; }
     .vendor-tag { background: #e1f5fe; color: #01579b; font-size: 0.7em; padding: 2px 8px; border-radius: 20px; font-weight: bold; }
     
-    /* Photo-Match Form Styling */
     div[data-testid="stForm"] {
-        border: 1px solid #eee;
-        padding: 20px;
-        border-radius: 15px;
-        background-color: white;
+        border: 1px solid #eee; padding: 20px; border-radius: 15px; background-color: white;
     }
     .safety-card {
-        background-color: #f0f9ff;
-        padding: 20px;
-        border-left: 5px solid #1DA1F2;
-        border-radius: 10px;
-        margin-bottom: 15px;
+        background-color: #f0f9ff; padding: 20px; border-left: 5px solid #1DA1F2; border-radius: 10px; margin-bottom: 15px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -78,22 +72,21 @@ if menu == "🛍️ Shopping Mall":
     data = load_sheet_data(PRODUCTS_URL)
     if not data.empty:
         if search_query:
-            data = data[data['name'].str.lower().str.contains(search_query, na=False)]
+            # Check for name or seller column safely
+            data = data[data.apply(lambda row: search_query in str(row.values).lower(), axis=1)]
 
-        cols = st.columns(5) # 5 COLUMN GRID
+        cols = st.columns(5)
         for i, (idx, row) in enumerate(data.iterrows()):
             with cols[i % 5]:
                 st.markdown('<div class="product-card">', unsafe_allow_html=True)
-                
-                # Image logic
                 img_url = row.get('image_url', row.get('image', ''))
                 try: st.image(img_url, use_container_width=True)
                 except: st.warning("Image Loading...")
                 
-                # INVISIBLE BUYER FEE (5%)
-                # The buyer sees only the final price. We don't mention the fee here.
+                # INVISIBLE ADMIN COMMISSION (5%)
                 try:
-                    price = float(row.get('price', 0)) * 1.05
+                    raw_p = str(row.get('price', 0)).replace(',', '')
+                    price = float(raw_p) * 1.05
                 except:
                     price = 0
                 
@@ -108,7 +101,7 @@ if menu == "🛍️ Shopping Mall":
     else:
         st.info("Zimi is stocking the shelves... Please refresh.")
 
-# --- 2. MERCHANT CATALOG (FIXED DATA ENGINE) ---
+# --- 2. MERCHANT CATALOG (ENHANCED LOADING) ---
 elif menu == "🏢 Merchant Catalog":
     st.title("Verified Partners")
     st.write("Vetted merchants active on ConfirmAm.")
@@ -116,60 +109,57 @@ elif menu == "🏢 Merchant Catalog":
     
     if not m_data.empty:
         for _, row in m_data.iterrows():
-            # Robust mapping: looks for name in any of the first two columns
-            name = row.iloc[0] if pd.notna(row.iloc[0]) else row.iloc[1]
-            if pd.notna(name):
-                with st.expander(f"✅ {str(name).upper()}"):
-                    niche = row.get('niche', row.get('category', 'General Vendor'))
-                    social = row.get('instagram', row.get('socials', row.get('handle', 'Verified')))
-                    st.write(f"**Niche:** {niche}")
-                    st.write(f"**Social:** `{social}`")
-                    st.markdown("*Escrow status: Enabled*")
+            # Brute force: get first non-empty value as name
+            vals = [v for v in row.values if pd.notna(v) and str(v).strip() != ""]
+            if vals:
+                name = str(vals[0]).upper()
+                with st.expander(f"✅ {name}"):
+                    st.write(f"**Niche:** {row.get('niche', row.get('category', 'General Vendor'))}")
+                    st.write(f"**Status:** Verified Active Merchant")
+                    st.markdown("*Escrow Protection: Enabled*")
     else:
-        st.warning("Updating partner list... Refresh to see new entries.")
+        st.warning("Ensure your Google Sheet tab is named 'merchants' exactly.")
 
-# --- 3. SAFETY ---
+# --- 3. SAFETY (COMMISSION HIDDEN FROM BUYERS) ---
 elif menu == "🛡️ How Escrow Works":
     st.header("The Zimi Guarantee")
-    st.write("ConfirmAm uses a secure Escrow system to make sure no one gets scammed.")
+    st.write("ConfirmAm uses a secure Escrow system to make sure your shopping is 100% safe.")
     
     st.markdown("""
     <div class="safety-card">
     <h4>1. Secure Payment</h4>
-    <p>We hold your payment in a neutral vault. The seller only sees that the order is paid.</p>
+    <p>We hold your payment in a neutral vault. Your money never goes directly to the seller until you are happy.</p>
     </div>
     <div class="safety-card">
-    <h4>2. Verification</h4>
-    <p>Merchant ships the product. You inspect it upon arrival.</p>
+    <h4>2. Delivery Verification</h4>
+    <p>The merchant ships your product. You have time to inspect it upon arrival.</p>
     </div>
     <div class="safety-card">
-    <h4>3. Release</h4>
-    <p>Money is only released to the seller after you confirm satisfaction.</p>
+    <h4>3. Happy Ending</h4>
+    <p>Once you confirm the order is perfect, we pay the merchant. If not, we refund you.</p>
     </div>
     """, unsafe_allow_html=True)
 
-# --- 4. APPLY TO SELL (VISIBLE SELLER FEE) ---
+# --- 4. APPLY TO SELL (COMMISSION VISIBLE TO SELLERS) ---
 elif menu == "📥 Apply to Sell":
     st.markdown("### Become a Verified Merchant")
-    st.info("Note: A 5% escrow commission applies to all successful sales on this platform.")
+    # Admin Note: Keeping the fee visible only for those wanting to sell
+    st.warning("Merchant Policy: A 5% escrow commission is deducted from successful sales to cover legal protection and payment processing.")
     
     with st.form("Merchant Application"):
         b_name = st.text_input("Business Name")
         b_niche = st.selectbox("Niche", ["Fashion", "Electronics", "Beauty", "Home", "Other"])
         b_email = st.text_input("Email Address")
-        b_social = st.text_input("Instagram/TikTok Handle")
         b_phone = st.text_input("WhatsApp Number")
         
         submitted = st.form_submit_button("Submit Application")
-        
         if submitted:
             if b_name and b_phone:
-                st.success("Application started! Click below to send your docs.")
-                whatsapp_msg = f"Merchant%20App:%20{b_name}%0ANiche:%20{b_niche}%0AEmail:%20{b_email}"
-                st.link_button("Finalize on WhatsApp", f"https://wa.me/2347046481507?text={whatsapp_msg}")
+                st.success("Application started!")
+                msg = f"New%20Merchant%20App:%20{b_name}%0ANiche:%20{b_niche}"
+                st.link_button("Send Documents via WhatsApp", f"https://wa.me/2347046481507?text={msg}")
 
 # --- 5. CONTACT SUPPORT ---
 elif menu == "📞 Contact Support":
-    st.header("Dispute Resolution & Help")
-    st.write("Need help with a transaction?")
+    st.header("Dispute Resolution")
     st.link_button("Chat with Admin", "https://wa.me/2347046481507")
