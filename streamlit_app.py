@@ -26,7 +26,6 @@ st.markdown("""
     .hero-box { background: #1DA1F2; color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 25px; }
     .trust-bar { background-color: #e1f5fe; padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 20px; border: 1px dashed #01579b; }
     .delivery-tag { font-size: 0.8em; color: #2e7d32; font-weight: bold; }
-    .featured-label { background: #FFD700; color: black; padding: 2px 10px; border-radius: 10px; font-size: 0.7em; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -38,7 +37,7 @@ st.sidebar.markdown("<h2 style='text-align:center;'>ConfirmAm</h2>", unsafe_allo
 st.sidebar.markdown("---")
 st.sidebar.subheader("🌍 International Pricing")
 currency = st.sidebar.selectbox("Select Currency", ["NGN (₦)", "USD ($)"])
-exchange_rate = 1600  # You can update this rate as it changes
+exchange_rate = 1600 # You can update this as the market moves
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🌟 Happy Customers")
@@ -50,80 +49,95 @@ st.sidebar.link_button("Track My Order", "https://wa.me/2347046481507?text=Hello
 
 menu = st.sidebar.radio("Navigation", ["🛍️ Shopping Mall", "🛡️ Safety & Escrow", "📥 Merchant Portal"])
 
+# --- DATA LOADING (THE LIVE UPDATE FIX) ---
+@st.cache_data(ttl=10) # Checks the sheet every 10 seconds for new data
+def get_fresh_data(url):
+    df = pd.read_csv(url)
+    df.columns = [c.strip().lower() for c in df.columns]
+    return df
+
 # --- SHOPPING MALL ---
 if menu == "🛍️ Shopping Mall":
     st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Verified Items • Secure Escrow • Fast Delivery</p></div>', unsafe_allow_html=True)
     st.markdown("""<div class="trust-bar"><p style="margin:0; color: #01579b; font-size: 0.85em;">🛡️ <b>Escrow Protected:</b> Money held safely until delivery. <br>🚚 <b>Real-time Shipping:</b> Best rates calculated via WhatsApp after payment.</p></div>""", unsafe_allow_html=True)
     
     try:
-        data = pd.read_csv(SHEET_URL)
-        data.columns = [c.strip().lower() for c in data.columns]
+        data = get_fresh_data(SHEET_URL)
         
-        search_query = st.text_input("🔍 Search for products or categories...", "")
+        # Search Bar
+        search_query = st.text_input("🔍 Search for products, categories, or sellers...", "")
         
+        # Filter for active items only
         if 'status' in data.columns:
             data = data[data['status'].str.lower() == 'active']
-
+        
         # Apply Search Filter
         if search_query:
             data = data[data['name'].str.contains(search_query, case=False, na=False) | 
-                        data.get('category', '').str.contains(search_query, case=False, na=False)]
+                        data.get('category', '').str.contains(search_query, case=False, na=False) |
+                        data.get('seller', '').str.contains(search_query, case=False, na=False)]
 
-        # OPTION B: Featured Section
+        # OPTION B: Featured Arrivals
         if 'featured' in data.columns and not search_query:
-            featured_items = data[data['featured'].str.upper() == 'YES']
+            featured_items = data[data['featured'].str.lower() == 'yes']
             if not featured_items.empty:
-                st.subheader("🌟 Featured Arrivals")
+                st.subheader("✨ Featured Arrivals")
                 f_cols = st.columns(len(featured_items))
                 for idx, (f_idx, f_row) in enumerate(featured_items.iterrows()):
                     with f_cols[idx]:
-                        st.image(f_row.get('image_url'), use_container_width=True)
-                        st.markdown(f"**{f_row.get('name')}**")
+                        st.image(f_row.get('image_url', 'https://via.placeholder.com/150'), use_container_width=True)
+                        st.caption(f"**{f_row.get('name')}**")
 
         st.markdown("---")
         st.subheader("🛍️ All Products")
 
-        # Display Products
-        cols = st.columns(2)
-        for i, row in data.iterrows():
-            with cols[i % 2]:
-                st.markdown('<div class="product-card">', unsafe_allow_html=True)
-                st.image(row.get('image_url', 'https://via.placeholder.com/300'), use_container_width=True)
-                
-                # Currency Conversion Math
-                naira_price = row.get('price', 0)
-                if currency == "USD ($)":
-                    display_price = f"${(naira_price / exchange_rate):,.2f}"
-                else:
-                    display_price = f"₦{naira_price:,}"
-                
-                is_v = str(row.get('verified', '')).strip().upper() == "TRUE"
-                badge = '<span class="verified-badge">☑️ VERIFIED</span>' if is_v else ""
-                
-                st.markdown(f"""
-                    <p style="font-size:0.75em; color:#666; margin-bottom:5px;">{row.get('seller', 'ConfirmAm')} {badge}</p>
-                    <b style="font-size:1.1em; display:block; height:40px;">{row.get('name', 'Item')}</b>
-                    <p class="price-text">{display_price}</p>
-                    <p class="delivery-tag">🚚 {row.get('delivery', 'Standard Shipping')}</p>
-                """, unsafe_allow_html=True)
-                
-                # Payment Link
-                st.link_button("Buy with Escrow", FLUTTERWAVE_LINK, use_container_width=True)
-                
-                # OPTION C: Invoice/Receipt Generator
-                if st.button(f"Generate Receipt for {row.get('name')}", key=f"rec_{i}"):
-                    st.toast("Generating Receipt...")
-                    st.code(f"CONFIRMAM RECEIPT\nITEM: {row.get('name')}\nPRICE: {display_price}\nSELLER: {row.get('seller')}\nSTATUS: PENDING ESCROW", language="markdown")
-                    st.info("👆 Screenshot this receipt and send to WhatsApp after payment!")
-                
-                st.markdown('</div>', unsafe_allow_html=True)
+        if data.empty:
+            st.info("No items found. Check back soon!")
+        else:
+            cols = st.columns(2)
+            for i, row in data.iterrows():
+                with cols[i % 2]:
+                    st.markdown('<div class="product-card">', unsafe_allow_html=True)
+                    st.image(row.get('image_url', 'https://via.placeholder.com/300'), use_container_width=True)
+                    
+                    # Currency conversion logic
+                    naira_price = row.get('price', 0)
+                    if currency == "USD ($)":
+                        display_price = f"${(naira_price / exchange_rate):,.2f}"
+                    else:
+                        display_price = f"₦{naira_price:,}"
+                    
+                    is_v = str(row.get('verified', '')).strip().upper() == "TRUE"
+                    badge = '<span class="verified-badge">☑️ VERIFIED</span>' if is_v else ""
+                    
+                    st.markdown(f"""
+                        <p style="font-size:0.75em; color:#666; margin-bottom:5px;">{row.get('seller', 'ConfirmAm')} {badge}</p>
+                        <b style="font-size:1.1em; display:block; height:40px;">{row.get('name', 'Item')}</b>
+                        <p class="price-text">{display_price}</p>
+                        <p class="delivery-tag">🚚 {row.get('delivery', 'Instant Delivery Available')}</p>
+                    """, unsafe_allow_html=True)
+                    
+                    st.link_button("Buy with Escrow", FLUTTERWAVE_LINK, use_container_width=True)
+                    
+                    # OPTION C: Receipt Generator
+                    if st.button(f"Generate Receipt: {row.get('name')[:15]}...", key=f"btn_{i}"):
+                        st.code(f"CONFIRMAM ESCROW RECEIPT\n----------------------\nITEM: {row.get('name')}\nPRICE: {display_price}\nSELLER: {row.get('seller')}\n----------------------\nSTATUS: AWAITING PAYMENT", language="markdown")
+                        st.info("Screenshot this and send to us on WhatsApp!")
+
+                    st.markdown('</div>', unsafe_allow_html=True)
     except Exception as e:
-        st.error("Connecting to global database...")
+        st.error(f"Waiting for your Google Sheet to wake up... (Check headers: name, price, seller, status, featured)")
 
 # --- SAFETY & ESCROW ---
 elif menu == "🛡️ Safety & Escrow":
     st.markdown("<h1 style='text-align:center;'>Your Protection is Our Priority</h1>", unsafe_allow_html=True)
-    st.markdown("""### 🛡️ How ConfirmAm Escrow Works:\n1. **PAY:** You pay via Flutterwave.\n2. **HOLD:** ConfirmAm holds the funds safely.\n3. **SHIP:** Vendor sends the item.\n4. **RELEASE:** You confirm receipt, then we pay the vendor.""")
+    st.markdown("""
+    ### 🛡️ How ConfirmAm Escrow Works:
+    1. **SECURE PAYMENT:** Pay via our secure Flutterwave link.
+    2. **FUNDS HELD:** We hold your money safely in escrow.
+    3. **VERIFIED SHIPPING:** Seller ships the item to your location.
+    4. **CONFIRM & RELEASE:** Once you confirm receipt, we pay the seller.
+    """)
     st.image("https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800", use_container_width=True)
 
 # --- MERCHANT PORTAL ---
@@ -132,7 +146,7 @@ elif menu == "📥 Merchant Portal":
     with st.form("Merchant Form"):
         biz_name = st.text_input("Business Name")
         biz_type = st.selectbox("Category", ["Fashion", "Electronics", "Beauty", "Other"])
-        ig_handle = st.text_input("Instagram/TikTok Handle")
+        contact = st.text_input("WhatsApp Number")
         submitted = st.form_submit_button("Submit Application")
         if submitted:
-            st.success("Application received!")
+            st.success("Application received! Our team will contact you shortly.")
