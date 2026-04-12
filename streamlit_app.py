@@ -90,7 +90,6 @@ if menu == "🛍️ Shopping Mall":
                     st.image(row.get('image_url', ''), use_container_width=True)
                     
                     # INVISIBLE FEE CALCULATION
-                    # Admin knows this is Price + 5%, Buyer just sees the total
                     raw_price = float(row.get('price', 0))
                     final_amt = raw_price * 1.05 
                     
@@ -115,16 +114,29 @@ elif menu == "🏢 Merchant Catalog":
     with col_m2: st.title("Verified Partners")
 
     try:
+        # Improved data loading for the merchant tab
         m_data = pd.read_csv(MERCHANTS_URL)
         m_data.columns = [c.strip().lower() for c in m_data.columns]
         
-        for cat in m_data['category'].unique():
-            with st.expander(f"📁 {cat.upper()} VENDORS", expanded=True):
-                cat_vendors = m_data[m_data['category'] == cat]
-                for _, m in cat_vendors.iterrows():
-                    st.markdown(f"✅ **{m.get('name')}** | Socials: `{m.get('socials')}`")
-    except:
-        st.error("Could not load directory.")
+        if m_data.empty:
+            st.info("Zimi is currently vetting new merchants. Check back soon!")
+        else:
+            # Grouping by category
+            if 'category' in m_data.columns:
+                for cat in m_data['category'].unique():
+                    with st.expander(f"📁 {str(cat).upper()} VENDORS", expanded=True):
+                        cat_vendors = m_data[m_data['category'] == cat]
+                        for _, m in cat_vendors.iterrows():
+                            v_name = m.get('name', 'Unknown Business')
+                            v_social = m.get('socials', 'No social link')
+                            st.markdown(f"✅ **{v_name}** | Socials: `{v_social}`")
+            else:
+                # Fallback if 'category' column is missing or named differently
+                st.write("### All Verified Vendors")
+                for _, m in m_data.iterrows():
+                    st.markdown(f"✅ **{m.iloc[0]}**")
+    except Exception as e:
+        st.error(f"Zimi couldn't load the directory. Please check that your Google Sheet has a tab named 'merchants'.")
 
 # --- 3. SAFETY & ESCROW ---
 elif menu == "🛡️ How Escrow Works":
@@ -135,8 +147,6 @@ elif menu == "🛡️ How Escrow Works":
     1. **Secured Funds:** We hold your payment in a neutral vault.
     2. **Verified Quality:** Vendors only get paid once the item is delivered.
     3. **No Scams:** We vet every merchant so you don't have to.
-    
-    *Need help with an order?*
     """)
     st.link_button("Contact Support", "https://wa.me/2347046481507")
 
