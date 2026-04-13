@@ -25,6 +25,7 @@ ZIMI_SIDEBAR = "https://i.postimg.cc/9QdS9nRv/Gemini-Generated-Image-5wc5485wc54
 def load_sheet_data(url):
     headers = {"User-Agent": "Mozilla/5.0"}
     try:
+        # Added cache_data to keep Zimi fast
         response = requests.get(url, headers=headers, timeout=10)
         df = pd.read_csv(StringIO(response.text), on_bad_lines='skip')
         df.columns = [c.strip().lower() for c in df.columns]
@@ -59,6 +60,12 @@ st.markdown("""
         border-radius: 10px;
         margin-bottom: 15px;
     }
+    .zimi-float {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -73,7 +80,13 @@ menu = st.sidebar.radio("Navigate", ["🛍️ Shopping Mall", "🏢 Merchant Cat
 
 # --- 1. SHOPPING MALL ---
 if menu == "🛍️ Shopping Mall":
-    st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Verified Vendors • Escrow Protected</p></div>', unsafe_allow_html=True)
+    # Zimi welcomes users to the Mall
+    col_a, col_b = st.columns([1, 4])
+    with col_a:
+        st.image(ZIMI_SIDEBAR, width=120)
+    with col_b:
+        st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Zimi has verified every vendor here for your safety.</p></div>', unsafe_allow_html=True)
+    
     search_query = st.text_input("🔍 Search for products, brands, or categories...", "").lower()
 
     data = load_sheet_data(PRODUCTS_URL)
@@ -107,8 +120,16 @@ if menu == "🛍️ Shopping Mall":
 
 # --- 2. MERCHANT CATALOG ---
 elif menu == "🏢 Merchant Catalog":
-    st.title("Verified Partners")
-    st.write("Vetted merchants active on ConfirmAm.")
+    st.markdown(f"""
+        <div class="zimi-float">
+            <img src="{ZIMI_SIDEBAR}" width="80">
+            <div>
+                <h2 style="margin:0;">Verified Partners</h2>
+                <p style="margin:0; color:#666;">Zimi manually reviews every merchant application.</p>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+    
     m_data = load_sheet_data(MERCHANTS_URL)
     
     if not m_data.empty:
@@ -121,11 +142,12 @@ elif menu == "🏢 Merchant Catalog":
                 st.write(f"**Social:** `{social}`")
                 st.markdown("*Escrow status: Enabled*")
     else:
-        st.warning("Ensure your Google Sheet is Shared (Anyone with link can view).")
+        st.warning("Zimi is looking for your merchant list... check sheet sharing settings!")
 
 # --- 3. SAFETY ---
 elif menu == "🛡️ How Escrow Works":
     st.header("The Zimi Guarantee")
+    st.image(ZIMI_SIDEBAR, width=150)
     st.write("ConfirmAm uses a secure Escrow system to make sure no one gets scammed.")
     
     st.markdown("""
@@ -139,7 +161,7 @@ elif menu == "🛡️ How Escrow Works":
     </div>
     <div class="safety-card">
     <h4>3. Release</h4>
-    <p>Money is only released to the seller after you confirm satisfaction.</p>
+    <p>Zimi releases the money to the seller only after you confirm you're happy.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -162,10 +184,10 @@ elif menu == "📥 Apply to Sell":
                 whatsapp_msg = f"Merchant%20App:%20{b_name}%0ANiche:%20{b_niche}"
                 st.link_button("Finalize on WhatsApp", f"https://wa.me/2347046481507?text={whatsapp_msg}")
 
-# --- 5. ADVERTISE PRODUCT (NEW REQUEST FORM) ---
+# --- 5. ADVERTISE PRODUCT ---
 elif menu == "📢 Advertise Product":
     st.header("List Your Product")
-    st.write("Fill this form to add a new product to the ConfirmAm Shopping Mall.")
+    st.write("Zimi will review your submission and add it to the mall shortly.")
     
     st.warning("Merchant Notice: An administrative fee of 5% will be added to your base price upon listing.")
     
@@ -180,13 +202,14 @@ elif menu == "📢 Advertise Product":
         
         if ad_submitted:
             if p_name and p_price > 0:
-                st.success("Product details captured! Send to admin for instant upload.")
+                st.success("Details ready! Click below to send to Zimi.")
                 ad_msg = f"AD%20REQUEST%0AProduct:%20{p_name}%0APrice:%20{p_price}%0AVendor:%20{p_vendor}"
-                st.link_button("Send Ad to Admin", f"https://wa.me/2347046481507?text={ad_msg}")
+                st.link_button("Send Ad to Zimi", f"https://wa.me/2347046481507?text={ad_msg}")
             else:
-                st.error("Please provide a name and valid price.")
+                st.error("Zimi needs a name and price to proceed!")
 
 # --- 6. CONTACT SUPPORT ---
 elif menu == "📞 Contact Support":
-    st.header("Need Help?")
+    st.header("Need Zimi's Help?")
+    st.image(ZIMI_SIDEBAR, width=100)
     st.link_button("Chat with Admin", "https://wa.me/2347046481507")
