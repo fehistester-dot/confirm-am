@@ -38,14 +38,12 @@ st.markdown("""
     <style>
     .stApp { background-color: #fcfcfc; }
     .product-card {
-        background-color: white; padding: 12px; border-radius: 15px;
-        border: 1px solid #eee; margin-bottom: 20px; text-align: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.3s;
+        background-color: white; padding: 20px; border-radius: 15px;
+        border: 1px solid #eee; margin-bottom: 25px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
-    .product-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
-    .price-text { color: #1DA1F2; font-weight: 800; font-size: 1.2em; margin: 8px 0; }
-    .hero-box { background: linear-gradient(135deg, #1DA1F2 0%, #01579b 100%); color: white; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 25px; }
-    .vendor-tag { background: #e1f5fe; color: #01579b; font-size: 0.7em; padding: 2px 8px; border-radius: 20px; font-weight: bold; }
+    .price-text { color: #1DA1F2; font-weight: 800; font-size: 1.5em; margin: 8px 0; }
+    .vendor-tag { background: #e1f5fe; color: #01579b; font-size: 0.8em; padding: 4px 10px; border-radius: 20px; font-weight: bold; }
     
     div[data-testid="stForm"] {
         border: 1px solid #eee; padding: 20px; border-radius: 15px; background-color: white;
@@ -70,15 +68,14 @@ symbol = "₦" if "NGN" in currency else "$"
 st.sidebar.markdown("---")
 menu = st.sidebar.radio("Navigate", ["🛍️ Shopping Mall", "🏢 Merchant Catalog", "🛡️ How Escrow Works", "📥 Apply to Sell", "📢 Advertise Product", "📞 Contact Support"])
 
-# --- 1. SHOPPING MALL ---
+# --- 1. SHOPPING MALL (UPDATED) ---
 if menu == "🛍️ Shopping Mall":
-    # Captain Zimi welcomes users
     st.markdown(f"""
         <div class="character-header">
             <img src="{ZIMI_SIDEBAR}" width="100">
             <div>
                 <h1 style="margin:0; color:#1DA1F2;">ConfirmAm Mall</h1>
-                <p style="margin:0; color:#666;"><b>Captain Zimi:</b> "Safe shopping is the only way to shop! Browse our vetted deals below."</p>
+                <p style="margin:0; color:#666;"><b>Captain Zimi:</b> "Safe shopping is the only way to shop! Select your options below."</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -90,28 +87,52 @@ if menu == "🛍️ Shopping Mall":
         if search_query:
             data = data[data['name'].str.lower().str.contains(search_query, na=False)]
 
-        cols = st.columns(5)
-        for i, (idx, row) in enumerate(data.iterrows()):
-            with cols[i % 5]:
-                st.markdown('<div class="product-card">', unsafe_allow_html=True)
+        for idx, row in data.iterrows():
+            st.markdown('<div class="product-card">', unsafe_allow_html=True)
+            col1, col2 = st.columns([1, 2])
+            
+            with col1:
                 img_url = row.get('image_url', row.get('image', ''))
                 try: st.image(img_url, use_container_width=True)
                 except: st.warning("Image Loading...")
+
+            with col2:
+                st.markdown(f"### {row.get('name', 'Product')}")
+                st.markdown(f'<span class="vendor-tag">👤 {row.get("seller", "Verified")}</span>', unsafe_allow_html=True)
                 
+                # Selection Widgets
+                opt1, opt2, opt3 = st.columns(3)
+                
+                colors_raw = str(row.get('available_colors', 'Default'))
+                color_list = [c.strip() for c in colors_raw.split(',')]
+                chosen_color = opt1.selectbox("Color", color_list, key=f"col_{idx}")
+
+                sizes_raw = str(row.get('available_sizes', 'N/A'))
+                size_list = [s.strip() for s in sizes_raw.split(',')]
+                chosen_size = opt2.selectbox("Size", size_list, key=f"sz_{idx}")
+
+                qty = opt3.number_input("Qty", min_value=1, max_value=10, value=1, key=f"qty_{idx}")
+
                 try:
                     price = float(row.get('price', 0)) * 1.05
                 except:
                     price = 0
                 
-                display_price = price if symbol == "₦" else (price / rate)
-                st.markdown(f"""
-                    <span class="vendor-tag">👤 {row.get('seller', 'Verified')}</span>
-                    <b style="font-size:0.9em; display:block; margin-top:10px;">{row.get('name', 'Product')}</b>
-                    <p class="price-text">{symbol}{display_price:,.0f}</p>
-                """, unsafe_allow_html=True)
-                st.link_button("Instant Buy", FLUTTERWAVE_LINK, use_container_width=True)
+                display_price = (price if symbol == "₦" else (price / rate)) * qty
+                st.markdown(f"<p class='price-text'>{symbol}{display_price:,.0f}</p>", unsafe_allow_html=True)
+                
+                # Buttons
+                order_text = f"ORDER%20DETAILS%0AProduct:%20{row.get('name')}%0AColor:%20{chosen_color}%0ASize:%20{chosen_size}%0AQty:%20{qty}"
+                whatsapp_order = f"https://wa.me/{WHATSAPP_NUMBER}?text={order_text}"
+
+                btn_col1, btn_col2 = st.columns(2)
+                with btn_col1:
+                    st.link_button("💳 Pay Now", FLUTTERWAVE_LINK, use_container_width=True)
+                with btn_col2:
+                    st.link_button("💬 Chat to Order", whatsapp_order, use_container_width=True)
+
                 st.markdown(f'<a href="https://wa.me/{WHATSAPP_NUMBER}?text=Reporting%20Product:%20{row.get("name")}" class="report-text">⚠️ Report Issue</a>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.info("Zimi is stocking the shelves... Please refresh.")
 
