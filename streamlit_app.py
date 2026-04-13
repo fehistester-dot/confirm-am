@@ -10,16 +10,17 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. THE DATABASE LINKS
+# 2. THE DATABASE LINKS & CONFIG
 PRODUCT_SHEET_ID = "1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs"
 MERCHANT_SHEET_ID = "1WniAk7CLPVev8qGGwFlah6SwnTeDUT1qJhHM3XslSXU"
+WHATSAPP_NUMBER = "2349136533490"  # Updated to your new number
 
 PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{PRODUCT_SHEET_ID}/export?format=csv&gid=0"
 MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{MERCHANT_SHEET_ID}/export?format=csv&gid=0"
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
-# --- ZIMI IMAGE LINKS ---
-ZIMI_SIDEBAR = "https://i.postimg.cc/9QdS9nRv/Gemini-Generated-Image-5wc5485wc5485wc5-removebg-preview.png"
+# --- ZIMI & CREW IMAGE LINKS ---
+ZIMI_IMG = "https://i.postimg.cc/9QdS9nRv/Gemini-Generated-Image-5wc5485wc5485wc5-removebg-preview.png"
 
 # --- THE MASTER KEY CONNECTION ---
 def load_sheet_data(url):
@@ -47,23 +48,20 @@ st.markdown("""
     .vendor-tag { background: #e1f5fe; color: #01579b; font-size: 0.7em; padding: 2px 8px; border-radius: 20px; font-weight: bold; }
     
     div[data-testid="stForm"] {
-        border: 1px solid #eee;
-        padding: 20px;
-        border-radius: 15px;
-        background-color: white;
+        border: 1px solid #eee; padding: 20px; border-radius: 15px; background-color: white;
     }
     .safety-card {
-        background-color: #f0f9ff;
-        padding: 20px;
-        border-left: 5px solid #1DA1F2;
-        border-radius: 10px;
-        margin-bottom: 15px;
+        background-color: #f0f9ff; padding: 20px; border-left: 5px solid #1DA1F2; border-radius: 10px; margin-bottom: 15px;
+    }
+    .character-header {
+        display: flex; align-items: center; gap: 20px; background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; margin-bottom: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
 
 # --- SIDEBAR & GLOBAL SETTINGS ---
-st.sidebar.image(ZIMI_SIDEBAR, use_container_width=True)
+st.sidebar.image(ZIMI_IMG, use_container_width=True)
+st.sidebar.markdown(f"**Chat with Zimi:** [Click Here](https://wa.me/{WHATSAPP_NUMBER})")
 currency = st.sidebar.selectbox("Display Currency", ["🇳🇬 NGN (Naira)", "🇺🇸 USD (Dollar)"])
 rate = 1500 
 symbol = "₦" if "NGN" in currency else "$"
@@ -73,7 +71,16 @@ menu = st.sidebar.radio("Navigate", ["🛍️ Shopping Mall", "🏢 Merchant Cat
 
 # --- 1. SHOPPING MALL ---
 if menu == "🛍️ Shopping Mall":
-    st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Verified Vendors • Escrow Protected</p></div>', unsafe_allow_html=True)
+    st.markdown(f"""
+        <div class="character-header">
+            <img src="{ZIMI_IMG}" width="100">
+            <div>
+                <h1 style="margin:0; color:#1DA1F2;">ConfirmAm Mall</h1>
+                <p style="margin:0; color:#666;"><b>Captain Zimi:</b> "I've personally vetted these deals for you!"</p>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+    
     search_query = st.text_input("🔍 Search for products, brands, or categories...", "").lower()
 
     data = load_sheet_data(PRODUCTS_URL)
@@ -107,86 +114,14 @@ if menu == "🛍️ Shopping Mall":
 
 # --- 2. MERCHANT CATALOG ---
 elif menu == "🏢 Merchant Catalog":
-    st.title("Verified Partners")
-    st.write("Vetted merchants active on ConfirmAm.")
-    m_data = load_sheet_data(MERCHANTS_URL)
-    
-    if not m_data.empty:
-        for _, row in m_data.iterrows():
-            name_val = row.iloc[0] if pd.notna(row.iloc[0]) else "Verified Business"
-            with st.expander(f"✅ {str(name_val).upper()}"):
-                niche = row.get('niche', row.get('category', 'General Vendor'))
-                social = row.get('socials', row.get('instagram', 'Verified'))
-                st.write(f"**Niche:** {niche}")
-                st.write(f"**Social:** `{social}`")
-                st.markdown("*Escrow status: Enabled*")
-    else:
-        st.warning("Ensure your Google Sheet is Shared (Anyone with link can view).")
-
-# --- 3. SAFETY ---
-elif menu == "🛡️ How Escrow Works":
-    st.header("The Zimi Guarantee")
-    st.write("ConfirmAm uses a secure Escrow system to make sure no one gets scammed.")
-    
-    st.markdown("""
-    <div class="safety-card">
-    <h4>1. Secure Payment</h4>
-    <p>We hold your payment in a neutral vault. The seller only sees that the order is paid.</p>
-    </div>
-    <div class="safety-card">
-    <h4>2. Verification</h4>
-    <p>Merchant ships the product. You inspect it upon arrival.</p>
-    </div>
-    <div class="safety-card">
-    <h4>3. Release</h4>
-    <p>Money is only released to the seller after you confirm satisfaction.</p>
-    </div>
+    st.markdown(f"""
+        <div class="character-header">
+            <img src="{ZIMI_IMG}" width="90">
+            <div>
+                <h2 style="margin:0;">Verified Partners</h2>
+                <p style="margin:0; color:#666;"><b>Lexi the Auditor:</b> "Every merchant here has passed our safety check."</p>
+            </div>
+        </div>
     """, unsafe_allow_html=True)
-
-# --- 4. APPLY TO SELL ---
-elif menu == "📥 Apply to Sell":
-    st.markdown("### Become a Verified Merchant")
-    st.info("Note: A 5% escrow commission applies to all successful sales on this platform.")
     
-    with st.form("Merchant Application"):
-        b_name = st.text_input("Business Name")
-        b_niche = st.selectbox("Niche", ["Fashion", "Electronics", "Beauty", "Home", "Other"])
-        b_email = st.text_input("Email Address")
-        b_social = st.text_input("Instagram/TikTok Handle")
-        b_phone = st.text_input("WhatsApp Number")
-        
-        submitted = st.form_submit_button("Submit Application")
-        if submitted:
-            if b_name and b_phone:
-                st.success("Application started!")
-                whatsapp_msg = f"Merchant%20App:%20{b_name}%0ANiche:%20{b_niche}"
-                st.link_button("Finalize on WhatsApp", f"https://wa.me/2347046481507?text={whatsapp_msg}")
-
-# --- 5. ADVERTISE PRODUCT (NEW REQUEST FORM) ---
-elif menu == "📢 Advertise Product":
-    st.header("List Your Product")
-    st.write("Fill this form to add a new product to the ConfirmAm Shopping Mall.")
-    
-    st.warning("Merchant Notice: An administrative fee of 5% will be added to your base price upon listing.")
-    
-    with st.form("Product Ad Form"):
-        p_name = st.text_input("Product Name")
-        p_price = st.number_input("Your Asking Price (Base Price)", min_value=0)
-        p_desc = st.text_area("Product Description")
-        p_image = st.text_input("Image Link (URL)")
-        p_vendor = st.text_input("Your Business Name")
-        
-        ad_submitted = st.form_submit_button("Submit Product for Review")
-        
-        if ad_submitted:
-            if p_name and p_price > 0:
-                st.success("Product details captured! Send to admin for instant upload.")
-                ad_msg = f"AD%20REQUEST%0AProduct:%20{p_name}%0APrice:%20{p_price}%0AVendor:%20{p_vendor}"
-                st.link_button("Send Ad to Admin", f"https://wa.me/2347046481507?text={ad_msg}")
-            else:
-                st.error("Please provide a name and valid price.")
-
-# --- 6. CONTACT SUPPORT ---
-elif menu == "📞 Contact Support":
-    st.header("Need Help?")
-    st.link_button("Chat with Admin", "https://wa.me/2347046481507")
+    m_data = load_
