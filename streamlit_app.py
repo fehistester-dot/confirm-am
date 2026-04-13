@@ -11,9 +11,7 @@ st.set_page_config(
 )
 
 # 2. THE DATABASE LINKS
-# Products stays on the first ID
 PRODUCT_SHEET_ID = "1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs"
-# Merchants moved to your NEW ID
 MERCHANT_SHEET_ID = "1WniAk7CLPVev8qGGwFlah6SwnTeDUT1qJhHM3XslSXU"
 
 PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{PRODUCT_SHEET_ID}/export?format=csv&gid=0"
@@ -48,7 +46,6 @@ st.markdown("""
     .hero-box { background: linear-gradient(135deg, #1DA1F2 0%, #01579b 100%); color: white; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 25px; }
     .vendor-tag { background: #e1f5fe; color: #01579b; font-size: 0.7em; padding: 2px 8px; border-radius: 20px; font-weight: bold; }
     
-    /* Form Styling */
     div[data-testid="stForm"] {
         border: 1px solid #eee;
         padding: 20px;
@@ -72,7 +69,7 @@ rate = 1500
 symbol = "₦" if "NGN" in currency else "$"
 
 st.sidebar.markdown("---")
-menu = st.sidebar.radio("Navigate", ["🛍️ Shopping Mall", "🏢 Merchant Catalog", "🛡️ How Escrow Works", "📥 Apply to Sell", "📞 Contact Support"])
+menu = st.sidebar.radio("Navigate", ["🛍️ Shopping Mall", "🏢 Merchant Catalog", "🛡️ How Escrow Works", "📥 Apply to Sell", "📢 Advertise Product", "📞 Contact Support"])
 
 # --- 1. SHOPPING MALL ---
 if menu == "🛍️ Shopping Mall":
@@ -88,7 +85,6 @@ if menu == "🛍️ Shopping Mall":
         for i, (idx, row) in enumerate(data.iterrows()):
             with cols[i % 5]:
                 st.markdown('<div class="product-card">', unsafe_allow_html=True)
-                
                 img_url = row.get('image_url', row.get('image', ''))
                 try: st.image(img_url, use_container_width=True)
                 except: st.warning("Image Loading...")
@@ -117,17 +113,15 @@ elif menu == "🏢 Merchant Catalog":
     
     if not m_data.empty:
         for _, row in m_data.iterrows():
-            # Robust mapping: Grab the first non-empty cell as the name
             name_val = row.iloc[0] if pd.notna(row.iloc[0]) else "Verified Business"
             with st.expander(f"✅ {str(name_val).upper()}"):
-                # Dynamically try to find niche and socials
                 niche = row.get('niche', row.get('category', 'General Vendor'))
                 social = row.get('socials', row.get('instagram', 'Verified'))
                 st.write(f"**Niche:** {niche}")
                 st.write(f"**Social:** `{social}`")
                 st.markdown("*Escrow status: Enabled*")
     else:
-        st.warning("Ensure your new Google Sheet is Shared (Anyone with link can view).")
+        st.warning("Ensure your Google Sheet is Shared (Anyone with link can view).")
 
 # --- 3. SAFETY ---
 elif menu == "🛡️ How Escrow Works":
@@ -162,15 +156,37 @@ elif menu == "📥 Apply to Sell":
         b_phone = st.text_input("WhatsApp Number")
         
         submitted = st.form_submit_button("Submit Application")
-        
         if submitted:
             if b_name and b_phone:
-                st.success("Application started! Click below to send your docs.")
-                whatsapp_msg = f"Merchant%20App:%20{b_name}%0ANiche:%20{b_niche}%0AEmail:%20{b_email}"
+                st.success("Application started!")
+                whatsapp_msg = f"Merchant%20App:%20{b_name}%0ANiche:%20{b_niche}"
                 st.link_button("Finalize on WhatsApp", f"https://wa.me/2347046481507?text={whatsapp_msg}")
 
-# --- 5. CONTACT SUPPORT ---
+# --- 5. ADVERTISE PRODUCT (NEW REQUEST FORM) ---
+elif menu == "📢 Advertise Product":
+    st.header("List Your Product")
+    st.write("Fill this form to add a new product to the ConfirmAm Shopping Mall.")
+    
+    st.warning("Merchant Notice: An administrative fee of 5% will be added to your base price upon listing.")
+    
+    with st.form("Product Ad Form"):
+        p_name = st.text_input("Product Name")
+        p_price = st.number_input("Your Asking Price (Base Price)", min_value=0)
+        p_desc = st.text_area("Product Description")
+        p_image = st.text_input("Image Link (URL)")
+        p_vendor = st.text_input("Your Business Name")
+        
+        ad_submitted = st.form_submit_button("Submit Product for Review")
+        
+        if ad_submitted:
+            if p_name and p_price > 0:
+                st.success("Product details captured! Send to admin for instant upload.")
+                ad_msg = f"AD%20REQUEST%0AProduct:%20{p_name}%0APrice:%20{p_price}%0AVendor:%20{p_vendor}"
+                st.link_button("Send Ad to Admin", f"https://wa.me/2347046481507?text={ad_msg}")
+            else:
+                st.error("Please provide a name and valid price.")
+
+# --- 6. CONTACT SUPPORT ---
 elif menu == "📞 Contact Support":
-    st.header("Dispute Resolution & Help")
-    st.write("Need help with a transaction?")
+    st.header("Need Help?")
     st.link_button("Chat with Admin", "https://wa.me/2347046481507")
