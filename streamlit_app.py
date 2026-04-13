@@ -10,22 +10,26 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. THE DATABASE LINKS
+# 2. THE DATABASE LINKS & CONFIG
 PRODUCT_SHEET_ID = "1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs"
 MERCHANT_SHEET_ID = "1WniAk7CLPVev8qGGwFlah6SwnTeDUT1qJhHM3XslSXU"
+WHATSAPP_NUMBER = "2349136533490"  # Updated Number
 
 PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{PRODUCT_SHEET_ID}/export?format=csv&gid=0"
 MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{MERCHANT_SHEET_ID}/export?format=csv&gid=0"
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
-# --- ZIMI IMAGE LINKS ---
+# --- ZIMI & CREW IMAGE LINKS ---
 ZIMI_SIDEBAR = "https://i.postimg.cc/9QdS9nRv/Gemini-Generated-Image-5wc5485wc5485wc5-removebg-preview.png"
+# Assigning different characters to sections
+CAPTAIN_ZIMI = ZIMI_SIDEBAR
+AUDITOR_LEXI = "https://i.postimg.cc/9QdS9nRv/Gemini-Generated-Image-5wc5485wc5485wc5-removebg-preview.png" # Using same for now, replace with actual links if you have them!
+SUPPORT_MAX = "https://i.postimg.cc/9QdS9nRv/Gemini-Generated-Image-5wc5485wc5485wc5-removebg-preview.png"
 
 # --- THE MASTER KEY CONNECTION ---
 def load_sheet_data(url):
     headers = {"User-Agent": "Mozilla/5.0"}
     try:
-        # Added cache_data to keep Zimi fast
         response = requests.get(url, headers=headers, timeout=10)
         df = pd.read_csv(StringIO(response.text), on_bad_lines='skip')
         df.columns = [c.strip().lower() for c in df.columns]
@@ -48,29 +52,20 @@ st.markdown("""
     .vendor-tag { background: #e1f5fe; color: #01579b; font-size: 0.7em; padding: 2px 8px; border-radius: 20px; font-weight: bold; }
     
     div[data-testid="stForm"] {
-        border: 1px solid #eee;
-        padding: 20px;
-        border-radius: 15px;
-        background-color: white;
+        border: 1px solid #eee; padding: 20px; border-radius: 15px; background-color: white;
     }
     .safety-card {
-        background-color: #f0f9ff;
-        padding: 20px;
-        border-left: 5px solid #1DA1F2;
-        border-radius: 10px;
-        margin-bottom: 15px;
+        background-color: #f0f9ff; padding: 20px; border-left: 5px solid #1DA1F2; border-radius: 10px; margin-bottom: 15px;
     }
-    .zimi-float {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-bottom: 20px;
+    .character-header {
+        display: flex; align-items: center; gap: 20px; background: white; padding: 15px; border-radius: 15px; border: 1px solid #eee; margin-bottom: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
 
 # --- SIDEBAR & GLOBAL SETTINGS ---
 st.sidebar.image(ZIMI_SIDEBAR, use_container_width=True)
+st.sidebar.markdown(f"**Chat with Zimi:** [Click Here](https://wa.me/{WHATSAPP_NUMBER})")
 currency = st.sidebar.selectbox("Display Currency", ["🇳🇬 NGN (Naira)", "🇺🇸 USD (Dollar)"])
 rate = 1500 
 symbol = "₦" if "NGN" in currency else "$"
@@ -80,12 +75,15 @@ menu = st.sidebar.radio("Navigate", ["🛍️ Shopping Mall", "🏢 Merchant Cat
 
 # --- 1. SHOPPING MALL ---
 if menu == "🛍️ Shopping Mall":
-    # Zimi welcomes users to the Mall
-    col_a, col_b = st.columns([1, 4])
-    with col_a:
-        st.image(ZIMI_SIDEBAR, width=120)
-    with col_b:
-        st.markdown('<div class="hero-box"><h1>ConfirmAm Mall</h1><p>Zimi has verified every vendor here for your safety.</p></div>', unsafe_allow_html=True)
+    st.markdown(f"""
+        <div class="character-header">
+            <img src="{CAPTAIN_ZIMI}" width="100">
+            <div>
+                <h1 style="margin:0; color:#1DA1F2;">ConfirmAm Mall</h1>
+                <p style="margin:0; color:#666;"><b>Captain Zimi:</b> "I've personally vetted these deals for you!"</p>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
     
     search_query = st.text_input("🔍 Search for products, brands, or categories...", "").lower()
 
@@ -121,17 +119,16 @@ if menu == "🛍️ Shopping Mall":
 # --- 2. MERCHANT CATALOG ---
 elif menu == "🏢 Merchant Catalog":
     st.markdown(f"""
-        <div class="zimi-float">
-            <img src="{ZIMI_SIDEBAR}" width="80">
+        <div class="character-header">
+            <img src="{AUDITOR_LEXI}" width="90">
             <div>
                 <h2 style="margin:0;">Verified Partners</h2>
-                <p style="margin:0; color:#666;">Zimi manually reviews every merchant application.</p>
+                <p style="margin:0; color:#666;"><b>Lexi the Auditor:</b> "Every merchant here has passed our 10-point safety check."</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
     
     m_data = load_sheet_data(MERCHANTS_URL)
-    
     if not m_data.empty:
         for _, row in m_data.iterrows():
             name_val = row.iloc[0] if pd.notna(row.iloc[0]) else "Verified Business"
@@ -142,7 +139,7 @@ elif menu == "🏢 Merchant Catalog":
                 st.write(f"**Social:** `{social}`")
                 st.markdown("*Escrow status: Enabled*")
     else:
-        st.warning("Zimi is looking for your merchant list... check sheet sharing settings!")
+        st.warning("Lexi is still indexing the files... refresh shortly!")
 
 # --- 3. SAFETY ---
 elif menu == "🛡️ How Escrow Works":
@@ -153,15 +150,15 @@ elif menu == "🛡️ How Escrow Works":
     st.markdown("""
     <div class="safety-card">
     <h4>1. Secure Payment</h4>
-    <p>We hold your payment in a neutral vault. The seller only sees that the order is paid.</p>
+    <p>Captain Zimi holds your payment in a neutral vault. The seller only sees that the order is paid.</p>
     </div>
     <div class="safety-card">
     <h4>2. Verification</h4>
-    <p>Merchant ships the product. You inspect it upon arrival.</p>
+    <p>Merchant ships the product. Lexi monitors the tracking while you inspect the arrival.</p>
     </div>
     <div class="safety-card">
     <h4>3. Release</h4>
-    <p>Zimi releases the money to the seller only after you confirm you're happy.</p>
+    <p>Money is only released to the seller after Zimi gets the 'All Clear' from you.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -182,12 +179,12 @@ elif menu == "📥 Apply to Sell":
             if b_name and b_phone:
                 st.success("Application started!")
                 whatsapp_msg = f"Merchant%20App:%20{b_name}%0ANiche:%20{b_niche}"
-                st.link_button("Finalize on WhatsApp", f"https://wa.me/2347046481507?text={whatsapp_msg}")
+                st.link_button("Finalize with Zimi", f"https://wa.me/{WHATSAPP_NUMBER}?text={whatsapp_msg}")
 
 # --- 5. ADVERTISE PRODUCT ---
 elif menu == "📢 Advertise Product":
     st.header("List Your Product")
-    st.write("Zimi will review your submission and add it to the mall shortly.")
+    st.write("Submit your product details for review and listing in the mall.")
     
     st.warning("Merchant Notice: An administrative fee of 5% will be added to your base price upon listing.")
     
@@ -202,14 +199,4 @@ elif menu == "📢 Advertise Product":
         
         if ad_submitted:
             if p_name and p_price > 0:
-                st.success("Details ready! Click below to send to Zimi.")
-                ad_msg = f"AD%20REQUEST%0AProduct:%20{p_name}%0APrice:%20{p_price}%0AVendor:%20{p_vendor}"
-                st.link_button("Send Ad to Zimi", f"https://wa.me/2347046481507?text={ad_msg}")
-            else:
-                st.error("Zimi needs a name and price to proceed!")
-
-# --- 6. CONTACT SUPPORT ---
-elif menu == "📞 Contact Support":
-    st.header("Need Zimi's Help?")
-    st.image(ZIMI_SIDEBAR, width=100)
-    st.link_button("Chat with Admin", "https://wa.me/2347046481507")
+                st.success("Details ready! Click
