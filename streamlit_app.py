@@ -11,9 +11,13 @@ st.set_page_config(
 )
 
 # 2. THE DATABASE LINKS
-SHEET_ID = "1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs"
-PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=0"
-MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=1626214553"
+# Products stays on the first ID
+PRODUCT_SHEET_ID = "1-19BcEQqsLvRKoUX3opcah88GT6veC_8arPqryiJBWs"
+# Merchants moved to your NEW ID
+MERCHANT_SHEET_ID = "1WniAk7CLPVev8qGGwFlah6SwnTeDUT1qJhHM3XslSXU"
+
+PRODUCTS_URL = f"https://docs.google.com/spreadsheets/d/{PRODUCT_SHEET_ID}/export?format=csv&gid=0"
+MERCHANTS_URL = f"https://docs.google.com/spreadsheets/d/{MERCHANT_SHEET_ID}/export?format=csv&gid=0"
 FLUTTERWAVE_LINK = "https://flutterwave.com/pay/ctppxixgdke7"
 
 # --- ZIMI IMAGE LINKS ---
@@ -44,7 +48,7 @@ st.markdown("""
     .hero-box { background: linear-gradient(135deg, #1DA1F2 0%, #01579b 100%); color: white; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 25px; }
     .vendor-tag { background: #e1f5fe; color: #01579b; font-size: 0.7em; padding: 2px 8px; border-radius: 20px; font-weight: bold; }
     
-    /* Photo-Match Form Styling */
+    /* Form Styling */
     div[data-testid="stForm"] {
         border: 1px solid #eee;
         padding: 20px;
@@ -80,18 +84,15 @@ if menu == "🛍️ Shopping Mall":
         if search_query:
             data = data[data['name'].str.lower().str.contains(search_query, na=False)]
 
-        cols = st.columns(5) # 5 COLUMN GRID
+        cols = st.columns(5)
         for i, (idx, row) in enumerate(data.iterrows()):
             with cols[i % 5]:
                 st.markdown('<div class="product-card">', unsafe_allow_html=True)
                 
-                # Image logic
                 img_url = row.get('image_url', row.get('image', ''))
                 try: st.image(img_url, use_container_width=True)
                 except: st.warning("Image Loading...")
                 
-                # INVISIBLE BUYER FEE (5%)
-                # The buyer sees only the final price. We don't mention the fee here.
                 try:
                     price = float(row.get('price', 0)) * 1.05
                 except:
@@ -108,7 +109,7 @@ if menu == "🛍️ Shopping Mall":
     else:
         st.info("Zimi is stocking the shelves... Please refresh.")
 
-# --- 2. MERCHANT CATALOG (FIXED DATA ENGINE) ---
+# --- 2. MERCHANT CATALOG ---
 elif menu == "🏢 Merchant Catalog":
     st.title("Verified Partners")
     st.write("Vetted merchants active on ConfirmAm.")
@@ -116,17 +117,17 @@ elif menu == "🏢 Merchant Catalog":
     
     if not m_data.empty:
         for _, row in m_data.iterrows():
-            # Robust mapping: looks for name in any of the first two columns
-            name = row.iloc[0] if pd.notna(row.iloc[0]) else row.iloc[1]
-            if pd.notna(name):
-                with st.expander(f"✅ {str(name).upper()}"):
-                    niche = row.get('niche', row.get('category', 'General Vendor'))
-                    social = row.get('instagram', row.get('socials', row.get('handle', 'Verified')))
-                    st.write(f"**Niche:** {niche}")
-                    st.write(f"**Social:** `{social}`")
-                    st.markdown("*Escrow status: Enabled*")
+            # Robust mapping: Grab the first non-empty cell as the name
+            name_val = row.iloc[0] if pd.notna(row.iloc[0]) else "Verified Business"
+            with st.expander(f"✅ {str(name_val).upper()}"):
+                # Dynamically try to find niche and socials
+                niche = row.get('niche', row.get('category', 'General Vendor'))
+                social = row.get('socials', row.get('instagram', 'Verified'))
+                st.write(f"**Niche:** {niche}")
+                st.write(f"**Social:** `{social}`")
+                st.markdown("*Escrow status: Enabled*")
     else:
-        st.warning("Updating partner list... Refresh to see new entries.")
+        st.warning("Ensure your new Google Sheet is Shared (Anyone with link can view).")
 
 # --- 3. SAFETY ---
 elif menu == "🛡️ How Escrow Works":
@@ -148,7 +149,7 @@ elif menu == "🛡️ How Escrow Works":
     </div>
     """, unsafe_allow_html=True)
 
-# --- 4. APPLY TO SELL (VISIBLE SELLER FEE) ---
+# --- 4. APPLY TO SELL ---
 elif menu == "📥 Apply to Sell":
     st.markdown("### Become a Verified Merchant")
     st.info("Note: A 5% escrow commission applies to all successful sales on this platform.")
